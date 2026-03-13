@@ -55,6 +55,12 @@ body {
     background: #141428;
     border-radius: 12px;
     padding: 20px;
+    overflow-y: auto;
+}
+
+#demo-songs {
+    max-height: 300px;
+    overflow-y: auto;
 }
 
 .song-select h2, .player-slots h2 {

@@ -7,15 +7,39 @@ const UI = (() => {
     const MAX_PLAYERS = 4;
 
     function init() {
+        buildSongList();
         setupFileInput();
         setupButtons();
-        loadDemoSong();
+        selectSong('twinkle');
         addPlayerSlot();
     }
 
-    function loadDemoSong() {
-        currentSong = MidiParser.createDemoSong();
-        updateSongInfo('Twinkle Twinkle Little Star (Demo)');
+    function buildSongList() {
+        const container = document.getElementById('demo-songs');
+        const songs = MidiParser.getSongList();
+
+        for (const song of songs) {
+            const btn = document.createElement('button');
+            btn.className = 'song-btn';
+            btn.dataset.song = song.id;
+            const mins = Math.floor(song.duration / 60);
+            const secs = Math.floor(song.duration % 60);
+            btn.textContent = `${song.title} (${song.bpm} BPM, ${mins}:${secs.toString().padStart(2,'0')})`;
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.song-btn').forEach(b => b.classList.remove('selected'));
+                btn.classList.add('selected');
+                selectSong(song.id);
+            });
+            container.appendChild(btn);
+        }
+    }
+
+    function selectSong(id) {
+        currentSong = MidiParser.getDemoSong(id);
+        document.querySelectorAll('.song-btn').forEach(b => {
+            b.classList.toggle('selected', b.dataset.song === id);
+        });
+        updateSongInfo(currentSong.title);
         updateInstrumentOptions();
     }
 
@@ -34,12 +58,6 @@ const UI = (() => {
             } catch (err) {
                 alert('Kunde inte läsa MIDI-filen: ' + err.message);
             }
-        });
-
-        document.querySelector('[data-song="demo"]').addEventListener('click', (e) => {
-            document.querySelectorAll('.song-btn').forEach(b => b.classList.remove('selected'));
-            e.target.classList.add('selected');
-            loadDemoSong();
         });
     }
 
