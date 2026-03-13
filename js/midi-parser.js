@@ -570,6 +570,466 @@ const MidiParser = (() => {
             ]);
         }
 
+        // ==================== ROCK ====================
+
+        // --- 7. Back in Black (AC/DC style rock riff) ---
+        {
+            const E4=64,D4=62,A3=57,G3=55,E3=52,B3=59;
+            const E2=40,A2=45,D3=50,G2=43,B2=47;
+
+            songs['back-in-black'] = buildSong('Back in Black (Riff)', 120, [
+                { name: 'Gitarr', role: 'gitarr', program: 29, channel: 0, pattern: [
+                    ...[0, 16, 32, 48].flatMap(o => [
+                        [E4,o+0,0.5],[D4,o+0.5,0.5],[A3,o+1,1.5],
+                        [E4,o+3,0.5],[D4,o+3.5,0.5],[A3,o+4,0.5],[A3,o+5,0.5],
+                        [E4,o+6,0.5],[D4,o+6.5,0.5],[A3,o+7,1],
+                        [B3,o+8,1],[A3,o+9,0.5],[G3,o+9.5,0.5],[A3,o+10,2],
+                        [E3,o+12,1],[G3,o+13,1],[A3,o+14,2],
+                    ]),
+                ]},
+                { name: 'Bas', role: 'bas', program: 33, channel: 1, pattern: [
+                    ...[0, 16, 32, 48].flatMap(o => [
+                        [A2,o+0,2],[A2,o+2,2],[A2,o+4,2],[A2,o+6,2],
+                        [E2,o+8,2],[G2,o+10,2],[A2,o+12,2],[A2,o+14,2],
+                    ]),
+                ]},
+                { name: 'Trummor', role: 'trummor', channel: 9, isDrums: true, pattern: [
+                    ...[...Array(16)].flatMap((_, bar) => {
+                        const b = bar * 4;
+                        return [
+                            [36,b,0.5],[42,b,0.5],[42,b+0.5,0.5],
+                            [38,b+1,0.5],[42,b+1,0.5],[42,b+1.5,0.5],
+                            [36,b+2,0.5],[42,b+2,0.5],[42,b+2.5,0.5],
+                            [38,b+3,0.5],[42,b+3,0.5],[42,b+3.5,0.5],
+                        ];
+                    }),
+                ]},
+            ]);
+        }
+
+        // --- 8. Sunshine of Your Love (Cream - classic rock) ---
+        {
+            const D3=50,C3=48,Bb2=46,A2=45,G2=43,D4=62,F3=53;
+            const D2=38,C2=36,Bb1=34,G1=31;
+
+            songs['sunshine-of-your-love'] = buildSong('Sunshine of Your Love (Riff)', 112, [
+                { name: 'Gitarr', role: 'gitarr', program: 29, channel: 0, pattern: [
+                    ...[0, 16, 32, 48].flatMap(o => [
+                        [D3,o+0,1],[D3,o+1,0.5],[C3,o+1.5,0.5],[D3,o+2,1],
+                        [F3,o+3,0.5],[D3,o+3.5,0.5],[C3,o+4,2],
+                        [Bb2,o+6,1],[D3,o+7,1],
+                        [D3,o+8,1],[D3,o+9,0.5],[C3,o+9.5,0.5],[D3,o+10,1],
+                        [F3,o+11,0.5],[D3,o+11.5,0.5],[C3,o+12,2],
+                        [Bb2,o+14,1],[A2,o+15,1],
+                    ]),
+                ]},
+                { name: 'Bas', role: 'bas', program: 33, channel: 1, pattern: [
+                    ...[0, 16, 32, 48].flatMap(o => [
+                        [D2,o+0,2],[D2,o+2,1],[C2,o+4,2],
+                        [Bb1,o+6,1],[D2,o+7,1],
+                        [D2,o+8,2],[D2,o+10,1],[C2,o+12,2],
+                        [Bb1,o+14,1],[D2,o+15,1],
+                    ]),
+                ]},
+                { name: 'Trummor', role: 'trummor', channel: 9, isDrums: true, pattern: [
+                    ...[...Array(16)].flatMap((_, bar) => {
+                        const b = bar * 4;
+                        return [
+                            [36,b,0.5],[42,b,0.5],
+                            [42,b+1,0.5],[38,b+1,0.5],
+                            [36,b+2,0.5],[42,b+2,0.5],
+                            [42,b+3,0.5],[38,b+3,0.5],
+                        ];
+                    }),
+                ]},
+            ]);
+        }
+
+        // ==================== HÅRDROCK ====================
+
+        // --- 9. Iron Man (Black Sabbath) ---
+        {
+            const B3=59,D4=62,E4=64,G4=67,Fs4=66,B4=71;
+            const B1=35,D2=38,E2=40,G2=43,Fs2=42;
+
+            songs['iron-man'] = buildSong('Iron Man (Riff)', 76, [
+                { name: 'Gitarr', role: 'gitarr', program: 29, channel: 0, pattern: [
+                    ...[0, 24, 48].flatMap(o => [
+                        [B3,o+0,2],[B3,o+2,2],
+                        [D4,o+4,2],[D4,o+6,2],
+                        [E4,o+8,1],[E4,o+9,1],[G4,o+10,1],[Fs4,o+11,1],
+                        [G4,o+12,2],[Fs4,o+14,2],
+                        [E4,o+16,2],[E4,o+18,2],
+                        [D4,o+20,2],[D4,o+22,2],
+                    ]),
+                ]},
+                { name: 'Bas', role: 'bas', program: 33, channel: 1, pattern: [
+                    ...[0, 24, 48].flatMap(o => [
+                        [B1,o+0,4],[D2,o+4,4],
+                        [E2,o+8,2],[G2,o+10,1],[Fs2,o+11,1],
+                        [G2,o+12,2],[Fs2,o+14,2],
+                        [E2,o+16,4],[D2,o+20,4],
+                    ]),
+                ]},
+                { name: 'Trummor', role: 'trummor', channel: 9, isDrums: true, pattern: [
+                    ...[...Array(18)].flatMap((_, bar) => {
+                        const b = bar * 4;
+                        return [
+                            [36,b,0.5],[42,b,0.5],
+                            [42,b+1,0.5],
+                            [38,b+2,0.5],[42,b+2,0.5],
+                            [42,b+3,0.5],[36,b+3.5,0.5],
+                        ];
+                    }),
+                ]},
+            ]);
+        }
+
+        // --- 10. Crazy Train (Ozzy Osbourne) ---
+        {
+            const Fs4=66,A4=69,B4=71,Cs5=73,D5=74,E5=76;
+            const Fs3=54,A3=57,E3=52,D3=50;
+            const Fs2=42,A2=45,E2=40,D2=38;
+
+            songs['crazy-train'] = buildSong('Crazy Train (Intro)', 138, [
+                { name: 'Gitarr', role: 'gitarr', program: 29, channel: 0, pattern: [
+                    ...[0, 16, 32, 48].flatMap(o => [
+                        [Fs4,o+0,0.5],[Fs4,o+0.5,0.5],[A4,o+1,0.5],[Fs4,o+1.5,0.5],
+                        [B4,o+2,0.5],[Fs4,o+2.5,0.5],[A4,o+3,0.5],[Fs4,o+3.5,0.5],
+                        [B4,o+4,0.5],[A4,o+4.5,0.5],[Fs4,o+5,0.5],[A4,o+5.5,0.5],
+                        [B4,o+6,0.5],[A4,o+6.5,0.5],[Fs4,o+7,0.5],[E5,o+7.5,0.5],
+                        [D5,o+8,0.5],[Cs5,o+8.5,0.5],[B4,o+9,0.5],[Cs5,o+9.5,0.5],
+                        [D5,o+10,0.5],[Cs5,o+10.5,0.5],[B4,o+11,0.5],[A4,o+11.5,0.5],
+                        [B4,o+12,2],[A4,o+14,2],
+                    ]),
+                ]},
+                { name: 'Bas', role: 'bas', program: 33, channel: 1, pattern: [
+                    ...[0, 16, 32, 48].flatMap(o => [
+                        [Fs2,o+0,4],[Fs2,o+4,4],
+                        [D2,o+8,2],[A2,o+10,2],
+                        [E2,o+12,2],[Fs2,o+14,2],
+                    ]),
+                ]},
+                { name: 'Trummor', role: 'trummor', channel: 9, isDrums: true, pattern: [
+                    ...[...Array(16)].flatMap((_, bar) => {
+                        const b = bar * 4;
+                        return [
+                            [36,b,0.5],[42,b,0.5],[42,b+0.5,0.5],
+                            [38,b+1,0.5],[42,b+1,0.5],[42,b+1.5,0.5],
+                            [36,b+2,0.5],[42,b+2,0.5],[36,b+2.5,0.5],
+                            [38,b+3,0.5],[42,b+3,0.5],[42,b+3.5,0.5],
+                        ];
+                    }),
+                ]},
+            ]);
+        }
+
+        // ==================== PROGRESSIV ROCK ====================
+
+        // --- 11. Money (Pink Floyd - 7/4 takt) ---
+        {
+            const B2=47,Fs3=54,E3=52,D3=50,B3=59,Cs3=49;
+            const B1=35,Fs2=42,E2=40,D2=38;
+
+            songs['money'] = buildSong('Money (Bassriff)', 120, [
+                { name: 'Bas', role: 'bas', program: 33, channel: 1, pattern: [
+                    // 7/4 takt - basriff
+                    ...[0, 14, 28, 42].flatMap(o => [
+                        [B2,o+0,1],[Fs3,o+1,0.5],[Fs3,o+1.5,0.5],
+                        [E3,o+2,1],[Fs3,o+3,0.5],[D3,o+3.5,0.5],
+                        [B2,o+4,0.5],[B2,o+4.5,0.5],[Cs3,o+5,1],
+                        [B2,o+6,1],[B2,o+7,1],
+                        [Fs3,o+8,1],[E3,o+9,1],
+                        [D3,o+10,1],[Cs3,o+11,1],
+                        [B2,o+12,2],
+                    ]),
+                ]},
+                { name: 'Gitarr', role: 'gitarr', program: 29, channel: 0, pattern: [
+                    ...[0, 14, 28, 42].flatMap(o => [
+                        [B3,o+0,2],[59,o+2,2],
+                        [B3,o+4,1],[54,o+5,1],
+                        [52,o+6,1],[B3,o+7,1],
+                        [59,o+8,2],[54,o+10,2],
+                        [52,o+12,2],
+                    ]),
+                ]},
+                { name: 'Trummor', role: 'trummor', channel: 9, isDrums: true, pattern: [
+                    ...[...Array(16)].flatMap((_, bar) => {
+                        const b = bar * 3.5; // 7/4 = 3.5 halvtakter
+                        return [
+                            [36,b,0.5],[42,b,0.5],
+                            [42,b+1,0.5],[38,b+1,0.5],
+                            [42,b+2,0.5],[36,b+2.5,0.5],
+                            [42,b+3,0.5],
+                        ];
+                    }),
+                ]},
+            ]);
+        }
+
+        // --- 12. Roundabout (Yes - prog rock) ---
+        {
+            const E4=64,Fs4=66,Gs4=68,A4=69,B4=71,Cs5=73,E5=76;
+            const E3=52,Fs3=54,Gs3=56,A3=57,B3=59;
+            const E2=40,A2=45,B2=47;
+
+            songs['roundabout'] = buildSong('Roundabout (Intro)', 140, [
+                { name: 'Gitarr', role: 'gitarr', program: 25, channel: 0, pattern: [
+                    ...[0, 16, 32, 48].flatMap(o => [
+                        [E4,o+0,0.5],[Fs4,o+0.5,0.5],[Gs4,o+1,0.5],[A4,o+1.5,0.5],
+                        [B4,o+2,0.5],[A4,o+2.5,0.5],[Gs4,o+3,0.5],[Fs4,o+3.5,0.5],
+                        [E4,o+4,1],[Gs4,o+5,0.5],[B4,o+5.5,0.5],
+                        [E5,o+6,1],[B4,o+7,0.5],[Gs4,o+7.5,0.5],
+                        [E4,o+8,0.5],[Fs4,o+8.5,0.5],[Gs4,o+9,0.5],[A4,o+9.5,0.5],
+                        [B4,o+10,1],[Cs5,o+11,1],
+                        [B4,o+12,1],[A4,o+13,1],[Gs4,o+14,1],[Fs4,o+15,1],
+                    ]),
+                ]},
+                { name: 'Bas', role: 'bas', program: 33, channel: 1, pattern: [
+                    ...[0, 16, 32, 48].flatMap(o => [
+                        [E2,o+0,2],[E2,o+2,2],
+                        [A2,o+4,2],[E2,o+6,2],
+                        [E2,o+8,2],[A2,o+10,2],
+                        [B2,o+12,2],[E2,o+14,2],
+                    ]),
+                ]},
+                { name: 'Trummor', role: 'trummor', channel: 9, isDrums: true, pattern: [
+                    ...[...Array(16)].flatMap((_, bar) => {
+                        const b = bar * 4;
+                        return [
+                            [42,b,0.5],[36,b,0.5],
+                            [42,b+0.5,0.5],
+                            [42,b+1,0.5],[38,b+1,0.5],
+                            [42,b+1.5,0.5],
+                            [42,b+2,0.5],[36,b+2,0.5],
+                            [42,b+2.5,0.5],
+                            [42,b+3,0.5],[38,b+3,0.5],
+                            [42,b+3.5,0.5],
+                        ];
+                    }),
+                ]},
+            ]);
+        }
+
+        // ==================== SPY ROCK (EBBA GRÖN-STIL) ====================
+
+        // --- 13. Punk-riff i Ebba Grön-stil ---
+        {
+            const E4=64,D4=62,A3=57,B3=59,G3=55,E3=52;
+            const E2=40,A2=45,D3=50,B2=47,G2=43;
+
+            songs['punk-riot'] = buildSong('Uppror Nu! (Spy Rock)', 180, [
+                { name: 'Gitarr', role: 'gitarr', program: 29, channel: 0, pattern: [
+                    // Snabba powerchords
+                    ...[0, 8, 16, 24, 32, 40, 48, 56].flatMap(o => [
+                        [E4,o+0,0.5],[E4,o+0.5,0.5],[E4,o+1,0.5],[E4,o+1.5,0.5],
+                        [D4,o+2,0.5],[D4,o+2.5,0.5],[A3,o+3,0.5],[A3,o+3.5,0.5],
+                        [B3,o+4,0.5],[B3,o+4.5,0.5],[B3,o+5,0.5],[B3,o+5.5,0.5],
+                        [E4,o+6,1],[D4,o+7,0.5],[E4,o+7.5,0.5],
+                    ]),
+                ]},
+                { name: 'Bas', role: 'bas', program: 33, channel: 1, pattern: [
+                    ...[0, 8, 16, 24, 32, 40, 48, 56].flatMap(o => [
+                        [E2,o+0,1],[E2,o+1,1],
+                        [D3,o+2,1],[A2,o+3,1],
+                        [B2,o+4,1],[B2,o+5,1],
+                        [E2,o+6,1],[E2,o+7,1],
+                    ]),
+                ]},
+                { name: 'Trummor', role: 'trummor', channel: 9, isDrums: true, pattern: [
+                    // Snabb punk-beat
+                    ...[...Array(16)].flatMap((_, bar) => {
+                        const b = bar * 4;
+                        return [
+                            [36,b,0.5],[42,b,0.5],[42,b+0.5,0.5],
+                            [38,b+1,0.5],[42,b+1,0.5],[42,b+1.5,0.5],
+                            [36,b+2,0.5],[42,b+2,0.5],[42,b+2.5,0.5],
+                            [38,b+3,0.5],[42,b+3,0.5],[42,b+3.5,0.5],
+                        ];
+                    }),
+                ]},
+                { name: 'Sång', role: 'sång', channel: 3, pattern: [
+                    // Sångmelodi - aggressiv och enkel
+                    ...[0, 16, 32, 48].flatMap(o => [
+                        [E4,o+0,1],[E4,o+1,0.5],[D4,o+1.5,0.5],
+                        [E4,o+2,1],[A3,o+3,1],
+                        [B3,o+4,2],[A3,o+6,1],[B3,o+7,1],
+                        [E4,o+8,1],[E4,o+9,0.5],[D4,o+9.5,0.5],
+                        [E4,o+10,2],[D4,o+12,1],[E4,o+13,1],
+                        [D4,o+14,1],[A3,o+15,1],
+                    ]),
+                ]},
+            ]);
+        }
+
+        // --- 14. Statens Vansen (Spy Rock stil) ---
+        {
+            const A4=69,G4=67,F4=65,E4=64,D4=62,C4=60;
+            const A2=45,G2=43,F2=41,E2=40,D2=38,C2=36;
+
+            songs['statens-vansen'] = buildSong('Statens Vansinne (Spy Rock)', 170, [
+                { name: 'Gitarr', role: 'gitarr', program: 29, channel: 0, pattern: [
+                    ...[0, 8, 16, 24, 32, 40, 48, 56].flatMap(o => [
+                        [A4,o+0,0.5],[A4,o+0.5,0.5],[G4,o+1,0.5],[G4,o+1.5,0.5],
+                        [F4,o+2,0.5],[F4,o+2.5,0.5],[E4,o+3,0.5],[E4,o+3.5,0.5],
+                        [D4,o+4,0.5],[D4,o+4.5,0.5],[E4,o+5,0.5],[E4,o+5.5,0.5],
+                        [F4,o+6,1],[E4,o+7,0.5],[D4,o+7.5,0.5],
+                    ]),
+                ]},
+                { name: 'Bas', role: 'bas', program: 33, channel: 1, pattern: [
+                    ...[0, 8, 16, 24, 32, 40, 48, 56].flatMap(o => [
+                        [A2,o+0,1],[G2,o+1,1],
+                        [F2,o+2,1],[E2,o+3,1],
+                        [D2,o+4,1],[E2,o+5,1],
+                        [F2,o+6,1],[E2,o+7,1],
+                    ]),
+                ]},
+                { name: 'Trummor', role: 'trummor', channel: 9, isDrums: true, pattern: [
+                    ...[...Array(16)].flatMap((_, bar) => {
+                        const b = bar * 4;
+                        return [
+                            [36,b,0.5],[42,b,0.5],[42,b+0.5,0.5],
+                            [38,b+1,0.5],[42,b+1,0.5],[42,b+1.5,0.5],
+                            [36,b+2,0.5],[36,b+2.5,0.5],[42,b+2,0.5],
+                            [38,b+3,0.5],[49,b+3,0.5],[42,b+3.5,0.5],
+                        ];
+                    }),
+                ]},
+            ]);
+        }
+
+        // ==================== METAL ====================
+
+        // --- 15. Enter Sandman (Metallica - riff) ---
+        {
+            const E3=52,G3=55,Fs3=54,Bb3=58,A3=57;
+            const E2=40,G2=43,Fs2=42,Bb2=46,A2=45;
+            const E4=64;
+
+            songs['enter-sandman'] = buildSong('Enter Sandman (Riff)', 123, [
+                { name: 'Gitarr', role: 'gitarr', program: 29, channel: 0, pattern: [
+                    ...[0, 16, 32, 48].flatMap(o => [
+                        // Iconic riff
+                        [E3,o+0,0.5],[E3,o+1,0.5],[G3,o+2,0.5],[E3,o+3,0.5],
+                        [Bb3,o+4,0.5],[A3,o+4.5,0.5],[E3,o+5,0.5],[E3,o+6,0.5],
+                        [G3,o+7,0.5],[E3,o+8,0.5],
+                        [Fs3,o+9,0.5],[E3,o+9.5,0.5],[Fs3,o+10,0.5],[G3,o+10.5,0.5],
+                        [Fs3,o+11,0.5],[E3,o+11.5,0.5],[E3,o+12,1],
+                        [E3,o+13,0.5],[E3,o+13.5,0.5],[E3,o+14,1],
+                    ]),
+                ]},
+                { name: 'Bas', role: 'bas', program: 33, channel: 1, pattern: [
+                    ...[0, 16, 32, 48].flatMap(o => [
+                        [E2,o+0,2],[E2,o+2,2],
+                        [Bb2,o+4,1],[A2,o+5,1],[E2,o+6,2],
+                        [Fs2,o+8,1],[E2,o+9,1],[Fs2,o+10,1],[G2,o+11,1],
+                        [E2,o+12,4],
+                    ]),
+                ]},
+                { name: 'Trummor', role: 'trummor', channel: 9, isDrums: true, pattern: [
+                    ...[...Array(16)].flatMap((_, bar) => {
+                        const b = bar * 4;
+                        return [
+                            [36,b,0.5],[42,b,0.5],
+                            [42,b+0.5,0.5],
+                            [38,b+1,0.5],[42,b+1,0.5],
+                            [42,b+1.5,0.5],
+                            [36,b+2,0.5],[36,b+2.5,0.5],[42,b+2,0.5],
+                            [38,b+3,0.5],[42,b+3,0.5],[42,b+3.5,0.5],
+                        ];
+                    }),
+                ]},
+            ]);
+        }
+
+        // --- 16. Raining Blood (Slayer-stil - thrash metal) ---
+        {
+            const E3=52,F3=53,Fs3=54,G3=55,Ab3=56,Bb3=58;
+            const E2=40,F2=41,Fs2=42,G2=43,Ab2=44;
+
+            songs['raining-blood'] = buildSong('Raining Blood (Riff)', 200, [
+                { name: 'Gitarr', role: 'gitarr', program: 29, channel: 0, pattern: [
+                    // Thrash riff - snabbt och aggressivt
+                    ...[0, 8, 16, 24, 32, 40, 48, 56].flatMap(o => [
+                        [E3,o+0,0.25],[E3,o+0.25,0.25],[E3,o+0.5,0.25],[E3,o+0.75,0.25],
+                        [E3,o+1,0.25],[F3,o+1.25,0.25],[Fs3,o+1.5,0.25],[G3,o+1.75,0.25],
+                        [Ab3,o+2,0.5],[G3,o+2.5,0.5],
+                        [Fs3,o+3,0.25],[F3,o+3.25,0.25],[E3,o+3.5,0.5],
+                        [E3,o+4,0.25],[E3,o+4.25,0.25],[E3,o+4.5,0.25],[E3,o+4.75,0.25],
+                        [Bb3,o+5,0.5],[Ab3,o+5.5,0.5],
+                        [G3,o+6,0.5],[Fs3,o+6.5,0.5],[F3,o+7,0.5],[E3,o+7.5,0.5],
+                    ]),
+                ]},
+                { name: 'Bas', role: 'bas', program: 33, channel: 1, pattern: [
+                    ...[0, 8, 16, 24, 32, 40, 48, 56].flatMap(o => [
+                        [E2,o+0,1],[E2,o+1,1],
+                        [Ab2,o+2,0.5],[G2,o+2.5,0.5],[Fs2,o+3,0.5],[E2,o+3.5,0.5],
+                        [E2,o+4,1],[E2,o+5,1],
+                        [G2,o+6,0.5],[Fs2,o+6.5,0.5],[F2,o+7,0.5],[E2,o+7.5,0.5],
+                    ]),
+                ]},
+                { name: 'Trummor', role: 'trummor', channel: 9, isDrums: true, pattern: [
+                    // Double bass drum thrash beat
+                    ...[...Array(16)].flatMap((_, bar) => {
+                        const b = bar * 4;
+                        return [
+                            [36,b,0.25],[36,b+0.25,0.25],[36,b+0.5,0.25],[36,b+0.75,0.25],
+                            [38,b+1,0.5],[42,b+1,0.5],[36,b+1.5,0.25],[36,b+1.75,0.25],
+                            [36,b+2,0.25],[36,b+2.25,0.25],[36,b+2.5,0.25],[36,b+2.75,0.25],
+                            [38,b+3,0.5],[49,b+3,0.5],[36,b+3.5,0.25],[36,b+3.75,0.25],
+                        ];
+                    }),
+                ]},
+            ]);
+        }
+
+        // --- 17. Master of Puppets (Metallica - thrash) ---
+        {
+            const E3=52,F3=53,Fs3=54,G3=55,A3=57,Bb3=58,B3=59;
+            const E2=40,F2=41,G2=43,A2=45,B2=47;
+
+            songs['master-of-puppets'] = buildSong('Master of Puppets (Riff)', 212, [
+                { name: 'Gitarr', role: 'gitarr', program: 29, channel: 0, pattern: [
+                    ...[0, 16, 32, 48].flatMap(o => [
+                        // Gallop riff
+                        [E3,o+0,0.25],[E3,o+0.5,0.25],[E3,o+0.75,0.25],
+                        [E3,o+1,0.25],[E3,o+1.5,0.25],[E3,o+1.75,0.25],
+                        [G3,o+2,0.5],[Fs3,o+2.5,0.5],
+                        [E3,o+3,0.25],[E3,o+3.5,0.25],[E3,o+3.75,0.25],
+                        [E3,o+4,0.25],[E3,o+4.5,0.25],[E3,o+4.75,0.25],
+                        [E3,o+5,0.25],[E3,o+5.5,0.25],[E3,o+5.75,0.25],
+                        [Bb3,o+6,0.5],[A3,o+6.5,0.5],
+                        [G3,o+7,0.25],[Fs3,o+7.25,0.25],[F3,o+7.5,0.25],[E3,o+7.75,0.25],
+                        [E3,o+8,0.25],[E3,o+8.5,0.25],[E3,o+8.75,0.25],
+                        [E3,o+9,0.25],[E3,o+9.5,0.25],[E3,o+9.75,0.25],
+                        [F3,o+10,0.5],[G3,o+10.5,0.5],
+                        [A3,o+11,0.5],[G3,o+11.5,0.5],
+                        [F3,o+12,0.5],[E3,o+12.5,0.5],[E3,o+13,1],
+                        [E3,o+14,1],[E3,o+15,1],
+                    ]),
+                ]},
+                { name: 'Bas', role: 'bas', program: 33, channel: 1, pattern: [
+                    ...[0, 16, 32, 48].flatMap(o => [
+                        [E2,o+0,2],[E2,o+2,2],
+                        [E2,o+4,2],[E2,o+6,2],
+                        [E2,o+8,2],[F2,o+10,1],[G2,o+11,1],
+                        [A2,o+12,1],[G2,o+13,1],[E2,o+14,2],
+                    ]),
+                ]},
+                { name: 'Trummor', role: 'trummor', channel: 9, isDrums: true, pattern: [
+                    ...[...Array(16)].flatMap((_, bar) => {
+                        const b = bar * 4;
+                        return [
+                            [36,b,0.25],[42,b,0.5],[36,b+0.5,0.25],[36,b+0.75,0.25],
+                            [38,b+1,0.5],[42,b+1,0.5],[36,b+1.5,0.25],[36,b+1.75,0.25],
+                            [36,b+2,0.25],[42,b+2,0.5],[36,b+2.5,0.25],[36,b+2.75,0.25],
+                            [38,b+3,0.5],[42,b+3,0.5],[36,b+3.5,0.25],[36,b+3.75,0.25],
+                        ];
+                    }),
+                ]},
+            ]);
+        }
+
         return songs;
     }
 
