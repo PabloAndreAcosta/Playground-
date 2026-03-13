@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BandJam - Multiplayer Music Game</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <!-- LOBBY SCREEN -->
+    <div id="lobby-screen" class="screen active">
+        <h1 class="title">BandJam</h1>
+        <p class="subtitle">Välj en låt och ett instrument - spela tillsammans!</p>
+
+        <div class="lobby-container">
+            <div class="song-select">
+                <h2>Välj låt</h2>
+                <input type="file" id="midi-file-input" accept=".mid,.midi">
+                <label for="midi-file-input" class="file-label">Ladda upp MIDI-fil</label>
+                <div id="demo-songs">
+                    <button class="song-btn selected" data-song="demo">Demo: Twinkle Twinkle</button>
+                </div>
+                <div id="song-info" class="hidden">
+                    <p id="song-name"></p>
+                    <p id="song-tracks"></p>
+                </div>
+            </div>
+
+            <div class="player-slots">
+                <h2>Spelare</h2>
+                <div id="players-container">
+                    <!-- Player slots rendered by JS -->
+                </div>
+                <button id="add-player-btn" class="btn btn-secondary">+ Lägg till spelare</button>
+            </div>
+        </div>
+
+        <button id="start-game-btn" class="btn btn-primary btn-large" disabled>Starta!</button>
+    </div>
+
+    <!-- GAME SCREEN -->
+    <div id="game-screen" class="screen">
+        <div id="game-header">
+            <button id="back-btn" class="btn btn-small">Tillbaka</button>
+            <div id="score-display"></div>
+            <div id="song-progress"></div>
+        </div>
+        <div id="game-area">
+            <!-- Canvas lanes rendered per player -->
+        </div>
+        <div id="key-hints"></div>
+    </div>
+
+    <!-- RESULTS SCREEN -->
+    <div id="results-screen" class="screen">
+        <h1>Resultat</h1>
+        <div id="results-container"></div>
+        <button id="play-again-btn" class="btn btn-primary btn-large">Spela igen</button>
+    </div>
+
+    <script src="js/midi-parser.js"></script>
+    <script src="js/synth.js"></script>
+    <script src="js/game-engine.js"></script>
+    <script src="js/ui.js"></script>
+    <script src="js/app.js"></script>
+</body>
+</html>
