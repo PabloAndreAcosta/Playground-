@@ -10,7 +10,7 @@ const UI = (() => {
         setupFileInput();
         setupButtons();
         loadDemoSong();
-        addPlayerSlot(); // Start with one player
+        addPlayerSlot();
     }
 
     function loadDemoSong() {
@@ -30,15 +30,12 @@ const UI = (() => {
                 currentSong = MidiParser.parse(buffer);
                 updateSongInfo(file.name.replace(/\.(mid|midi)$/i, ''));
                 updateInstrumentOptions();
-
-                // Deselect demo button
                 document.querySelectorAll('.song-btn').forEach(b => b.classList.remove('selected'));
             } catch (err) {
                 alert('Kunde inte läsa MIDI-filen: ' + err.message);
             }
         });
 
-        // Demo song button
         document.querySelector('[data-song="demo"]').addEventListener('click', (e) => {
             document.querySelectorAll('.song-btn').forEach(b => b.classList.remove('selected'));
             e.target.classList.add('selected');
@@ -54,6 +51,33 @@ const UI = (() => {
             `Spår: ${currentSong.tracks.map(t => t.name).join(', ')} | ${currentSong.bpm} BPM`;
     }
 
+    function getInstrumentHint(role, playerIndex) {
+        const cfg = GameEngine.getInstrumentForRole(role);
+        if (!cfg) return '';
+        if (cfg.isVocal) return 'Mikrofon';
+        const keys = cfg.keys[playerIndex % cfg.keys.length];
+        return keys.map(k => k.toUpperCase()).join(' ');
+    }
+
+    function updateKeyHints() {
+        for (let i = 0; i < playerSlots.length; i++) {
+            const slot = playerSlots[i];
+            const select = slot.element.querySelector('select');
+            const hintSpan = slot.element.querySelector('.key-hint-text');
+            if (!hintSpan) continue;
+
+            const trackName = select.value;
+            if (trackName && currentSong) {
+                const track = currentSong.tracks.find(t => t.name === trackName);
+                if (track) {
+                    hintSpan.textContent = getInstrumentHint(track.role, i);
+                    return;
+                }
+            }
+            hintSpan.textContent = '';
+        }
+    }
+
     function updateInstrumentOptions() {
         for (const slot of playerSlots) {
             const select = slot.element.querySelector('select');
@@ -67,11 +91,9 @@ const UI = (() => {
                 select.appendChild(opt);
             }
 
-            // Try to restore previous selection
-            if (currentValue) {
-                select.value = currentValue;
-            }
+            if (currentValue) select.value = currentValue;
         }
+        updateKeyHints();
         validateStartButton();
     }
 
@@ -80,7 +102,6 @@ const UI = (() => {
 
         const index = playerSlots.length;
         const color = GameEngine.PLAYER_COLORS[index];
-        const keys = GameEngine.getKeyBindings()[index];
 
         const div = document.createElement('div');
         div.className = 'player-slot';
@@ -90,17 +111,15 @@ const UI = (() => {
             <select>
                 <option value="">-- Välj instrument --</option>
             </select>
-            <span style="color:#555;font-size:0.75rem">${keys.map(k => k.toUpperCase()).join(' ')}</span>
+            <span class="key-hint-text" style="color:#555;font-size:0.75rem"></span>
             ${index > 0 ? '<button class="remove-player">&times;</button>' : ''}
         `;
 
         const slot = { element: div, index };
         playerSlots.push(slot);
 
-        const container = document.getElementById('players-container');
-        container.appendChild(div);
+        document.getElementById('players-container').appendChild(div);
 
-        // Populate instrument options
         const select = div.querySelector('select');
         if (currentSong) {
             for (const track of currentSong.tracks) {
@@ -111,17 +130,16 @@ const UI = (() => {
             }
         }
 
-        select.addEventListener('change', validateStartButton);
+        select.addEventListener('change', () => {
+            updateKeyHints();
+            validateStartButton();
+        });
 
-        // Remove button
         const removeBtn = div.querySelector('.remove-player');
         if (removeBtn) {
-            removeBtn.addEventListener('click', () => {
-                removePlayerSlot(slot);
-            });
+            removeBtn.addEventListener('click', () => removePlayerSlot(slot));
         }
 
-        // Hide add button if max players
         if (playerSlots.length >= MAX_PLAYERS) {
             document.getElementById('add-player-btn').classList.add('hidden');
         }
@@ -133,7 +151,6 @@ const UI = (() => {
         slot.element.remove();
         playerSlots = playerSlots.filter(s => s !== slot);
 
-        // Re-number remaining slots
         playerSlots.forEach((s, i) => {
             s.index = i;
             s.element.querySelector('.player-name').textContent = `Spelare ${i + 1}`;
@@ -141,6 +158,7 @@ const UI = (() => {
         });
 
         document.getElementById('add-player-btn').classList.remove('hidden');
+        updateKeyHints();
         validateStartButton();
     }
 
@@ -148,10 +166,7 @@ const UI = (() => {
         const btn = document.getElementById('start-game-btn');
         const selections = playerSlots.map(s => s.element.querySelector('select').value).filter(v => v);
 
-        // Need at least one player with an instrument
         const valid = selections.length > 0;
-
-        // Check for duplicates
         const unique = new Set(selections);
         const noDupes = unique.size === selections.length;
 
@@ -189,10 +204,7 @@ const UI = (() => {
             if (!trackName) continue;
             const track = currentSong.tracks.find(t => t.name === trackName);
             if (track) {
-                playerConfigs.push({
-                    trackName: track.name,
-                    role: track.role,
-                });
+                playerConfigs.push({ trackName: track.name, role: track.role });
             }
         }
 
@@ -235,9 +247,5 @@ const UI = (() => {
         document.getElementById(screenId).classList.add('active');
     }
 
-    function getSong() {
-        return currentSong;
-    }
-
-    return { init, getSong };
+    return { init };
 })();
