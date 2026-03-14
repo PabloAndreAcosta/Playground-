@@ -6,6 +6,7 @@ const UI = (() => {
     let playerSlots = [];
     let selectedDifficulty = 'medium';
     const MAX_PLAYERS = 4;
+    const HIGHSCORE_KEY = 'bandjam_highscores';
 
     function init() {
         buildSongList();
@@ -42,6 +43,7 @@ const UI = (() => {
         });
         updateSongInfo(currentSong.title);
         updateInstrumentOptions();
+        updateLobbyLeaderboard();
     }
 
     function setupFileInput() {
@@ -198,6 +200,12 @@ const UI = (() => {
         }
     }
 
+    function updateLobbyLeaderboard() {
+        const el = document.getElementById('leaderboard');
+        if (!el || !currentSong) return;
+        renderLeaderboard(currentSong.title, selectedDifficulty);
+    }
+
     function setupDifficultyButtons() {
         const buttons = document.querySelectorAll('.diff-btn');
         buttons.forEach(btn => {
@@ -205,6 +213,7 @@ const UI = (() => {
                 buttons.forEach(b => b.classList.remove('selected'));
                 btn.classList.add('selected');
                 selectedDifficulty = btn.dataset.diff;
+                updateLobbyLeaderboard();
             });
         });
     }
@@ -216,6 +225,10 @@ const UI = (() => {
         document.getElementById('start-game-btn').addEventListener('click', () => {
             if (!currentSong) return;
             startGame();
+        });
+
+        document.getElementById('volume-slider').addEventListener('input', (e) => {
+            Synth.setVolume(parseInt(e.target.value) / 100);
         });
 
         document.getElementById('back-btn').addEventListener('click', () => {
@@ -245,12 +258,77 @@ const UI = (() => {
         GameEngine.start(currentSong, playerConfigs, showResults, selectedDifficulty);
     }
 
+    // ==================== HIGHSCORE ====================
+
+    function getHighscores() {
+        try {
+            return JSON.parse(localStorage.getItem(HIGHSCORE_KEY)) || {};
+        } catch { return {}; }
+    }
+
+    function saveHighscore(songTitle, difficulty, playerResult) {
+        const scores = getHighscores();
+        const key = `${songTitle}__${difficulty}`;
+        if (!scores[key]) scores[key] = [];
+
+        scores[key].push({
+            score: playerResult.score,
+            accuracy: playerResult.accuracy,
+            grade: playerResult.accuracy >= 95 ? 'S' : playerResult.accuracy >= 85 ? 'A' :
+                   playerResult.accuracy >= 70 ? 'B' : playerResult.accuracy >= 50 ? 'C' : 'D',
+            track: playerResult.trackName,
+            combo: playerResult.combo,
+            date: new Date().toLocaleDateString('sv-SE'),
+        });
+
+        // Keep top 5 per song+difficulty
+        scores[key].sort((a, b) => b.score - a.score);
+        scores[key] = scores[key].slice(0, 5);
+
+        localStorage.setItem(HIGHSCORE_KEY, JSON.stringify(scores));
+        return scores[key];
+    }
+
+    function getTopScoresForSong(songTitle, difficulty) {
+        const scores = getHighscores();
+        return scores[`${songTitle}__${difficulty}`] || [];
+    }
+
+    function renderLeaderboard(songTitle, difficulty) {
+        const el = document.getElementById('leaderboard');
+        if (!el) return;
+
+        const top = getTopScoresForSong(songTitle, difficulty);
+        if (top.length === 0) {
+            el.innerHTML = '<p class="leaderboard-empty">Inga highscores än!</p>';
+            return;
+        }
+
+        el.innerHTML = `<h3>Highscores (${difficulty.charAt(0).toUpperCase() + difficulty.slice(1)})</h3>
+            <ol class="leaderboard-list">${top.map((s, i) => `
+                <li class="leaderboard-entry">
+                    <span class="lb-rank">#${i + 1}</span>
+                    <span class="lb-score">${s.score}</span>
+                    <span class="lb-grade" style="color:${s.grade === 'S' ? '#ffa500' : s.grade === 'A' ? '#48dbfb' : '#6bff6b'}">${s.grade}</span>
+                    <span class="lb-track">${s.track}</span>
+                    <span class="lb-date">${s.date}</span>
+                </li>`).join('')}
+            </ol>`;
+    }
+
     function showResults(results) {
         showScreen('results-screen');
 
         const diff = GameEngine.getDifficulty();
         const diffLabel = diff === 'easy' ? 'Easy' : diff === 'hard' ? 'Hard' : 'Medium';
         const diffColor = diff === 'easy' ? '#6bff6b' : diff === 'hard' ? '#ff6b6b' : '#48dbfb';
+
+        // Save highscores
+        const songTitle = currentSong ? currentSong.title : 'Unknown';
+        let allTopScores = [];
+        for (const r of results) {
+            allTopScores = saveHighscore(songTitle, diff, r);
+        }
 
         const container = document.getElementById('results-container');
         container.innerHTML = `<div style="width:100%;text-align:center;margin-bottom:12px;font-size:0.9rem;color:${diffColor}">Svårighetsgrad: ${diffLabel}</div>` + results.map(r => {
@@ -262,10 +340,14 @@ const UI = (() => {
                                grade === 'A' ? '#48dbfb' :
                                grade === 'B' ? '#6bff6b' : '#888';
 
+            const isNewHighscore = allTopScores.length > 0 && r.score >= allTopScores[0].score;
+            const highscoreBadge = isNewHighscore ? '<div class="new-highscore">Nytt highscore!</div>' : '';
+
             return `<div class="result-card">
                 <h3 style="color:${GameEngine.PLAYER_COLORS[r.playerIndex]}">
                     Spelare ${r.playerIndex + 1} - ${r.trackName}
                 </h3>
+                ${highscoreBadge}
                 <div class="result-grade" style="color:${gradeColor}">${grade}</div>
                 <div class="result-score">${r.score}</div>
                 <div class="result-details">
@@ -274,7 +356,23 @@ const UI = (() => {
                     Miss: ${r.hits.miss} | Max combo: ${r.combo}
                 </div>
             </div>`;
-        }).join('');
+        }).join('') + `<div id="results-leaderboard" class="leaderboard-panel"></div>`;
+
+        // Render leaderboard in results
+        const lbEl = document.getElementById('results-leaderboard');
+        const top = getTopScoresForSong(songTitle, diff);
+        if (top.length > 0) {
+            lbEl.innerHTML = `<h3>Topplista - ${songTitle}</h3>
+                <ol class="leaderboard-list">${top.map((s, i) => `
+                    <li class="leaderboard-entry">
+                        <span class="lb-rank">#${i + 1}</span>
+                        <span class="lb-score">${s.score}</span>
+                        <span class="lb-grade" style="color:${s.grade === 'S' ? '#ffa500' : s.grade === 'A' ? '#48dbfb' : '#6bff6b'}">${s.grade}</span>
+                        <span class="lb-track">${s.track}</span>
+                        <span class="lb-date">${s.date}</span>
+                    </li>`).join('')}
+                </ol>`;
+        }
     }
 
     function showScreen(screenId) {

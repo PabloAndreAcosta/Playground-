@@ -1,17 +1,17 @@
 /**
  * Synth - Web Audio synthesizer for backing tracks and hit sounds.
- * Plays MIDI notes using oscillators and provides audio feedback.
+ * Uses layered oscillators for richer instrument tones.
  */
 const Synth = (() => {
     let audioCtx = null;
     let masterGain = null;
-    const activeNotes = {};
+    let volumeLevel = 0.5; // 0-1
 
     function init() {
         if (audioCtx) return;
         audioCtx = new (window.AudioContext || window.webkitAudioContext)();
         masterGain = audioCtx.createGain();
-        masterGain.gain.value = 0.3;
+        masterGain.gain.value = volumeLevel * 0.6;
         masterGain.connect(audioCtx.destination);
     }
 
@@ -21,49 +21,112 @@ const Synth = (() => {
         }
     }
 
+    function setVolume(v) {
+        volumeLevel = Math.max(0, Math.min(1, v));
+        if (masterGain) {
+            masterGain.gain.setTargetAtTime(volumeLevel * 0.6, audioCtx.currentTime, 0.05);
+        }
+    }
+
+    function getVolume() {
+        return volumeLevel;
+    }
+
     function midiToFreq(note) {
         return 440 * Math.pow(2, (note - 69) / 12);
     }
 
-    // Instrument voice configs
+    // Richer voice configs with optional detune layers
     const VOICES = {
-        'sång':    { type: 'sine',     attack: 0.05, release: 0.2, gain: 0.4 },
-        'gitarr':  { type: 'sawtooth', attack: 0.01, release: 0.3, gain: 0.25 },
-        'bas':     { type: 'triangle', attack: 0.02, release: 0.3, gain: 0.5 },
-        'piano':   { type: 'triangle', attack: 0.01, release: 0.4, gain: 0.3 },
-        'trummor': { type: 'square',   attack: 0.001, release: 0.1, gain: 0.3 },
-        'stråkar': { type: 'sawtooth', attack: 0.1, release: 0.4, gain: 0.2 },
-        'blås':    { type: 'square',   attack: 0.05, release: 0.2, gain: 0.2 },
-        'synth':   { type: 'sawtooth', attack: 0.01, release: 0.2, gain: 0.25 },
+        'sång': {
+            layers: [
+                { type: 'sine', detune: 0, gain: 0.35 },
+                { type: 'sine', detune: 3, gain: 0.1 },
+            ],
+            attack: 0.05, release: 0.25,
+        },
+        'gitarr': {
+            layers: [
+                { type: 'sawtooth', detune: 0, gain: 0.18 },
+                { type: 'sawtooth', detune: 7, gain: 0.08 },
+                { type: 'triangle', detune: -5, gain: 0.06 },
+            ],
+            attack: 0.005, release: 0.35,
+        },
+        'bas': {
+            layers: [
+                { type: 'triangle', detune: 0, gain: 0.4 },
+                { type: 'sine', detune: 0, gain: 0.15 },
+            ],
+            attack: 0.02, release: 0.3,
+        },
+        'piano': {
+            layers: [
+                { type: 'triangle', detune: 0, gain: 0.22 },
+                { type: 'sine', detune: 1, gain: 0.12 },
+                { type: 'sawtooth', detune: -2, gain: 0.04 },
+            ],
+            attack: 0.005, release: 0.5,
+        },
+        'trummor': {
+            layers: [
+                { type: 'square', detune: 0, gain: 0.2 },
+                { type: 'sawtooth', detune: 0, gain: 0.1 },
+            ],
+            attack: 0.001, release: 0.08,
+        },
+        'stråkar': {
+            layers: [
+                { type: 'sawtooth', detune: 0, gain: 0.12 },
+                { type: 'sawtooth', detune: 5, gain: 0.08 },
+                { type: 'sawtooth', detune: -5, gain: 0.08 },
+            ],
+            attack: 0.12, release: 0.4,
+        },
+        'blås': {
+            layers: [
+                { type: 'square', detune: 0, gain: 0.14 },
+                { type: 'sine', detune: 3, gain: 0.06 },
+            ],
+            attack: 0.04, release: 0.2,
+        },
+        'synth': {
+            layers: [
+                { type: 'sawtooth', detune: 0, gain: 0.18 },
+                { type: 'square', detune: 7, gain: 0.06 },
+            ],
+            attack: 0.01, release: 0.2,
+        },
     };
 
     function playNote(noteNum, role, duration, time) {
         if (!audioCtx) init();
         const voice = VOICES[role] || VOICES['synth'];
         const freq = midiToFreq(noteNum);
-
-        const osc = audioCtx.createOscillator();
-        const gain = audioCtx.createGain();
-
-        osc.type = voice.type;
-        osc.frequency.value = freq;
-
         const startTime = time || audioCtx.currentTime;
         const endTime = startTime + (duration || 0.5);
 
-        gain.gain.setValueAtTime(0, startTime);
-        gain.gain.linearRampToValueAtTime(voice.gain, startTime + voice.attack);
-        gain.gain.setValueAtTime(voice.gain, endTime - voice.release);
-        gain.gain.linearRampToValueAtTime(0, endTime);
+        for (const layer of voice.layers) {
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
 
-        osc.connect(gain);
-        gain.connect(masterGain);
+            osc.type = layer.type;
+            osc.frequency.value = freq;
+            osc.detune.value = layer.detune;
 
-        osc.start(startTime);
-        osc.stop(endTime + 0.05);
+            gain.gain.setValueAtTime(0, startTime);
+            gain.gain.linearRampToValueAtTime(layer.gain, startTime + voice.attack);
+            gain.gain.setValueAtTime(layer.gain, Math.max(startTime + voice.attack, endTime - voice.release));
+            gain.gain.linearRampToValueAtTime(0, endTime);
+
+            osc.connect(gain);
+            gain.connect(masterGain);
+
+            osc.start(startTime);
+            osc.stop(endTime + 0.05);
+        }
     }
 
-    // Schedule all notes for a backing track
     function scheduleBackingTrack(track, startOffset) {
         if (!audioCtx) init();
         const now = audioCtx.currentTime;
@@ -75,31 +138,47 @@ const Synth = (() => {
         }
     }
 
-    // Play hit feedback sound
     function playHitSound(quality) {
         if (!audioCtx) init();
         const now = audioCtx.currentTime;
-        const osc = audioCtx.createOscillator();
-        const gain = audioCtx.createGain();
 
         if (quality === 'perfect') {
-            osc.frequency.value = 880;
-            gain.gain.setValueAtTime(0.15, now);
+            // Bright chime: two harmonics
+            [880, 1320].forEach((freq, i) => {
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.type = 'sine';
+                osc.frequency.value = freq;
+                gain.gain.setValueAtTime(i === 0 ? 0.12 : 0.06, now);
+                gain.gain.linearRampToValueAtTime(0, now + 0.2);
+                osc.connect(gain);
+                gain.connect(masterGain);
+                osc.start(now);
+                osc.stop(now + 0.25);
+            });
         } else if (quality === 'good') {
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = 'sine';
             osc.frequency.value = 660;
             gain.gain.setValueAtTime(0.1, now);
+            gain.gain.linearRampToValueAtTime(0, now + 0.15);
+            osc.connect(gain);
+            gain.connect(masterGain);
+            osc.start(now);
+            osc.stop(now + 0.2);
         } else {
-            osc.frequency.value = 220;
-            gain.gain.setValueAtTime(0.08, now);
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = 'sine';
+            osc.frequency.value = 330;
+            gain.gain.setValueAtTime(0.06, now);
+            gain.gain.linearRampToValueAtTime(0, now + 0.12);
+            osc.connect(gain);
+            gain.connect(masterGain);
+            osc.start(now);
+            osc.stop(now + 0.15);
         }
-
-        osc.type = 'sine';
-        gain.gain.linearRampToValueAtTime(0, now + 0.15);
-
-        osc.connect(gain);
-        gain.connect(masterGain);
-        osc.start(now);
-        osc.stop(now + 0.2);
     }
 
     function getAudioContext() {
@@ -110,5 +189,5 @@ const Synth = (() => {
         return audioCtx ? audioCtx.currentTime : 0;
     }
 
-    return { init, resume, playNote, scheduleBackingTrack, playHitSound, getAudioContext, getCurrentTime };
+    return { init, resume, playNote, scheduleBackingTrack, playHitSound, getAudioContext, getCurrentTime, setVolume, getVolume };
 })();

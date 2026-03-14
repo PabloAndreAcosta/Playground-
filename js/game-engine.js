@@ -937,6 +937,12 @@ const GameEngine = (() => {
         window.addEventListener('resize', handleResize);
         handleResize();
 
+        // Setup touch input on each player canvas
+        for (const player of players) {
+            if (player instanceof VocalLane) continue;
+            player.canvas.addEventListener('touchstart', handleTouch, { passive: false });
+        }
+
         // Show countdown, then enable input and start backing
         Effects.showCountdown(3, () => {
             document.addEventListener('keydown', handleKeyDown);
@@ -950,6 +956,33 @@ const GameEngine = (() => {
 
     function handleResize() {
         for (const player of players) player.resize();
+    }
+
+    function handleTouch(e) {
+        if (!isPlaying) return;
+        e.preventDefault();
+
+        const currentTime = performance.now() / 1000 - startTime;
+
+        // Find which player owns this canvas
+        for (const player of players) {
+            if (player instanceof VocalLane) continue;
+            if (player.canvas !== e.target) continue;
+
+            const rect = player.canvas.getBoundingClientRect();
+            const laneWidth = rect.width / player.laneCount;
+
+            // Handle each touch point
+            for (const touch of e.changedTouches) {
+                const x = touch.clientX - rect.left;
+                const laneIndex = Math.min(
+                    player.laneCount - 1,
+                    Math.max(0, Math.floor(x / laneWidth))
+                );
+                player.handleKeyDown(laneIndex, currentTime);
+            }
+            break;
+        }
     }
 
     function handleKeyDown(e) {
@@ -1009,6 +1042,12 @@ const GameEngine = (() => {
         document.removeEventListener('keydown', handleKeyDown);
         window.removeEventListener('resize', handleResize);
         Effects.hideCountdown();
+
+        // Remove touch listeners
+        for (const player of players) {
+            if (player instanceof VocalLane) continue;
+            player.canvas.removeEventListener('touchstart', handleTouch);
+        }
 
         for (const player of players) {
             if (player.destroy) player.destroy();

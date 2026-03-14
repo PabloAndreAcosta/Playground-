@@ -247,6 +247,45 @@ body {
     border-radius: 50%;
 }
 
+.volume-control {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.vol-icon {
+    color: #888;
+    font-size: 1rem;
+}
+
+#volume-slider {
+    width: 80px;
+    height: 4px;
+    -webkit-appearance: none;
+    appearance: none;
+    background: #333;
+    border-radius: 2px;
+    outline: none;
+}
+
+#volume-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: #48dbfb;
+    cursor: pointer;
+}
+
+#volume-slider::-moz-range-thumb {
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: #48dbfb;
+    border: none;
+    cursor: pointer;
+}
+
 #song-progress {
     color: #666;
     font-size: 0.9rem;
@@ -465,6 +504,87 @@ body {
     margin-top: 2px;
 }
 
+/* Leaderboard */
+#leaderboard, .leaderboard-panel {
+    margin-top: 16px;
+    background: #1a1a2e;
+    border-radius: 8px;
+    padding: 12px;
+}
+
+#leaderboard h3, .leaderboard-panel h3 {
+    font-size: 0.9rem;
+    color: #ffa500;
+    margin-bottom: 8px;
+}
+
+.leaderboard-empty {
+    color: #555;
+    font-size: 0.8rem;
+}
+
+.leaderboard-list {
+    list-style: none;
+    padding: 0;
+}
+
+.leaderboard-entry {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 5px 0;
+    border-bottom: 1px solid #1e1e3a;
+    font-size: 0.82rem;
+}
+
+.leaderboard-entry:last-child {
+    border-bottom: none;
+}
+
+.lb-rank {
+    color: #888;
+    min-width: 24px;
+    font-weight: bold;
+}
+
+.lb-score {
+    color: #48dbfb;
+    font-weight: bold;
+    min-width: 50px;
+}
+
+.lb-grade {
+    font-weight: bold;
+    min-width: 20px;
+}
+
+.lb-track {
+    color: #aaa;
+    flex: 1;
+}
+
+.lb-date {
+    color: #555;
+    font-size: 0.75rem;
+}
+
+.leaderboard-panel {
+    width: 100%;
+    margin-top: 20px;
+}
+
+.new-highscore {
+    color: #ffa500;
+    font-weight: bold;
+    font-size: 0.9rem;
+    animation: highscorePulse 0.8s ease-in-out infinite alternate;
+}
+
+@keyframes highscorePulse {
+    from { opacity: 0.7; transform: scale(1); }
+    to { opacity: 1; transform: scale(1.05); }
+}
+
 /* Countdown overlay */
 .countdown-overlay {
     position: fixed;
@@ -537,4 +657,102 @@ body {
     0% { transform: scale(3); opacity: 0; }
     60% { transform: scale(0.9); }
     100% { transform: scale(1); opacity: 1; }
+}
+
+/* Mobile responsive */
+@media (max-width: 768px) {
+    .lobby-container {
+        flex-direction: column;
+        gap: 16px;
+    }
+
+    .title {
+        font-size: 2rem;
+        margin-top: 10px;
+    }
+
+    .subtitle {
+        font-size: 0.9rem;
+        margin: 4px 0 12px;
+    }
+
+    .screen {
+        padding: 10px;
+    }
+
+    #demo-songs {
+        max-height: 200px;
+    }
+
+    .btn-large {
+        padding: 12px 32px;
+        font-size: 1rem;
+        margin-top: 12px;
+    }
+
+    #game-header {
+        flex-wrap: wrap;
+        gap: 6px;
+        padding: 0 6px 6px;
+    }
+
+    #score-display {
+        font-size: 0.9rem;
+        gap: 12px;
+    }
+
+    .volume-control {
+        order: 3;
+    }
+
+    #key-hints {
+        display: none;
+    }
+
+    .player-lane canvas {
+        touch-action: none;
+    }
+
+    #game-area {
+        gap: 2px;
+    }
+
+    .lane-label {
+        font-size: 0.7rem;
+    }
+
+    .combo-display {
+        font-size: 1.1rem;
+        bottom: 50px;
+    }
+
+    .difficulty-buttons {
+        gap: 4px;
+    }
+
+    .diff-btn {
+        padding: 8px 4px;
+    }
+
+    .diff-label {
+        font-size: 0.85rem;
+    }
+
+    .diff-desc {
+        font-size: 0.65rem;
+    }
+
+    .result-card {
+        min-width: 150px;
+        padding: 16px;
+    }
+
+    #results-screen h1 {
+        font-size: 1.8rem;
+        margin-bottom: 16px;
+    }
+
+    .countdown-overlay {
+        font-size: 5rem;
+    }
 }
