@@ -2,7 +2,11 @@
 <html lang="sv">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="theme-color" content="#0a0a1a">
     <title>BandJam - Multiplayer Music Game</title>
     <link rel="stylesheet" href="css/style.css">
 </head>
@@ -103,6 +107,9 @@
         </div>
         <div id="game-area">
             <!-- Canvas lanes rendered per player -->
+        </div>
+        <div id="touch-lanes" class="hidden">
+            <!-- Touch buttons rendered per lane -->
         </div>
         <div id="mp-scoreboard" class="hidden"></div>
         <div id="key-hints"></div>

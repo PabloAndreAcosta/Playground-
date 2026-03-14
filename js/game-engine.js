@@ -936,7 +936,7 @@ const GameEngine = (() => {
             }
         }
 
-        // Key hints
+        // Key hints (desktop)
         const hintEl = document.getElementById('key-hints');
         hintEl.innerHTML = players.map(p => {
             if (p instanceof VocalLane) {
@@ -947,6 +947,9 @@ const GameEngine = (() => {
                 ${p.keys.map(k => `<kbd>${k.toUpperCase()}</kbd>`).join(' ')}
             </div>`;
         }).join('');
+
+        // Touch lane buttons (mobile)
+        setupTouchLanes();
 
         startTime = performance.now() / 1000 + 4; // 3s countdown + 1s buffer
 
@@ -973,6 +976,56 @@ const GameEngine = (() => {
 
     function handleResize() {
         for (const player of players) player.resize();
+    }
+
+    // Detect mobile/touch device
+    function isTouchDevice() {
+        return 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+    }
+
+    // Build touch lane buttons at bottom of screen for mobile
+    function setupTouchLanes() {
+        const container = document.getElementById('touch-lanes');
+        if (!container) return;
+        container.innerHTML = '';
+
+        if (!isTouchDevice()) {
+            container.classList.add('hidden');
+            return;
+        }
+
+        container.classList.remove('hidden');
+
+        // Use first non-vocal player's lanes
+        const player = players.find(p => !(p instanceof VocalLane));
+        if (!player) return;
+
+        for (let i = 0; i < player.laneCount; i++) {
+            const btn = document.createElement('button');
+            btn.className = 'touch-lane-btn';
+            btn.textContent = player.config.laneLabels[i] || (i + 1);
+            btn.style.color = player.config.laneColors[i] || '#aaa';
+            btn.dataset.lane = i;
+
+            // Use touchstart for lowest latency
+            btn.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                if (!isPlaying) return;
+                const currentTime = performance.now() / 1000 - startTime;
+                player.handleKeyDown(i, currentTime);
+                btn.classList.add('pressed');
+            }, { passive: false });
+
+            btn.addEventListener('touchend', (e) => {
+                e.preventDefault();
+                btn.classList.remove('pressed');
+            }, { passive: false });
+
+            // Prevent context menu on long press
+            btn.addEventListener('contextmenu', (e) => e.preventDefault());
+
+            container.appendChild(btn);
+        }
     }
 
     function handleTouch(e) {
@@ -1068,6 +1121,13 @@ const GameEngine = (() => {
         for (const player of players) {
             if (player instanceof VocalLane) continue;
             player.canvas.removeEventListener('touchstart', handleTouch);
+        }
+
+        // Hide touch lanes
+        const touchEl = document.getElementById('touch-lanes');
+        if (touchEl) {
+            touchEl.classList.add('hidden');
+            touchEl.innerHTML = '';
         }
 
         for (const player of players) {
