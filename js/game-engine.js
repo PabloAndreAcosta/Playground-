@@ -513,6 +513,12 @@ const GameEngine = (() => {
             this.comboDisplay.className = 'combo-display';
             this.element.appendChild(this.comboDisplay);
 
+            // Particle system for this lane
+            this.particles = new Effects.ParticleSystem();
+            this.hitLabels = [];
+            this.missShakeTime = 0;
+            this.lastFrameTime = 0;
+
             container.appendChild(this.element);
             this.resize();
         }
@@ -525,6 +531,9 @@ const GameEngine = (() => {
         }
 
         update(currentTime) {
+            const dt = this.lastFrameTime ? (currentTime - this.lastFrameTime) : 0.016;
+            this.lastFrameTime = currentTime;
+
             const lookAhead = this.canvas.height / NOTE_SPEED + 0.5;
             while (this.nextNoteIndex < this.track.notes.length) {
                 const note = this.track.notes[this.nextNoteIndex];
@@ -539,6 +548,7 @@ const GameEngine = (() => {
                     note.missed = true;
                     this.hits.miss++;
                     this.combo = 0;
+                    this.missShakeTime = 0.2;
                 }
             }
 
@@ -546,13 +556,52 @@ const GameEngine = (() => {
                 const y = this.hitZoneY + (currentTime - n.startTime) * NOTE_SPEED;
                 return y < this.canvas.height + 100;
             });
+
+            // Update effects
+            this.particles.update(Math.abs(dt));
+            this.missShakeTime = Math.max(0, this.missShakeTime - Math.abs(dt));
+
+            // Streak fire particles
+            if (Effects.shouldShowFire(this.combo)) {
+                const laneWidth = this.canvas.width / this.laneCount;
+                const fireColor = Effects.getStreakColor(this.combo);
+                for (let i = 0; i < this.laneCount; i++) {
+                    if (Math.random() < 0.3) {
+                        this.particles.emit(
+                            (i + 0.5) * laneWidth,
+                            this.hitZoneY,
+                            fireColor,
+                            1,
+                            'fire'
+                        );
+                    }
+                }
+            }
+
+            // Update hit labels
+            for (const l of this.hitLabels) {
+                l.y -= 60 * Math.abs(dt);
+                l.life -= Math.abs(dt);
+            }
+            this.hitLabels = this.hitLabels.filter(l => l.life > 0);
         }
 
         render(currentTime) {
             const ctx = this.ctx;
             const w = this.canvas.width;
             const h = this.canvas.height;
-            ctx.clearRect(0, 0, w, h);
+
+            // Shake on miss
+            ctx.save();
+            if (this.missShakeTime > 0) {
+                const shake = Effects.getShakeOffset(this.combo, this.missShakeTime);
+                ctx.translate(shake.x, shake.y);
+            }
+
+            ctx.clearRect(-5, -5, w + 10, h + 10);
+
+            // Background pulse
+            Effects.renderBgPulse(ctx, w, h);
 
             const laneWidth = w / this.laneCount;
 
@@ -566,25 +615,34 @@ const GameEngine = (() => {
                 ctx.stroke();
             }
 
-            // Hit zone
-            ctx.fillStyle = 'rgba(255, 255, 255, 0.05)';
-            ctx.fillRect(0, this.hitZoneY - 3, w, 6);
+            // Hit zone glow per lane
+            for (let i = 0; i < this.laneCount; i++) {
+                Effects.renderHitZoneGlow(
+                    ctx, i * laneWidth, laneWidth,
+                    this.hitZoneY, this.combo,
+                    this.config.laneColors[i]
+                );
+            }
 
-            // Lane labels + key labels at hit zone
+            // Hit zone line
+            ctx.fillStyle = this.combo >= 10
+                ? `rgba(255, 165, 0, ${0.15 + 0.1 * Math.sin(performance.now() / 200)})`
+                : 'rgba(255, 255, 255, 0.08)';
+            ctx.fillRect(0, this.hitZoneY - 2, w, 4);
+
+            // Lane labels + key labels
             ctx.font = '11px monospace';
             ctx.textAlign = 'center';
             for (let i = 0; i < this.laneCount; i++) {
                 const cx = (i + 0.5) * laneWidth;
 
-                // Lane name (instrument-specific)
                 ctx.fillStyle = this.config.laneColors[i] || '#444';
                 ctx.globalAlpha = 0.3;
-                ctx.fillText(this.config.laneLabels[i] || '', cx, this.hitZoneY - 10);
+                ctx.fillText(this.config.laneLabels[i] || '', cx, this.hitZoneY - 12);
                 ctx.globalAlpha = 1;
 
-                // Key binding
                 ctx.fillStyle = 'rgba(255, 255, 255, 0.15)';
-                ctx.fillText(this.keys[i].toUpperCase(), cx, this.hitZoneY + 20);
+                ctx.fillText(this.keys[i].toUpperCase(), cx, this.hitZoneY + 22);
             }
 
             // Notes
@@ -601,14 +659,23 @@ const GameEngine = (() => {
                 const noteX = x + 3;
                 const noteY = y - noteH;
 
-                const color = note.missed ? 'rgba(100,100,100,0.3)' :
-                    (this.config.laneColors[lane] || '#48dbfb');
+                const baseColor = this.config.laneColors[lane] || '#48dbfb';
+                const color = note.missed ? 'rgba(100,100,100,0.3)' : baseColor;
+
+                // Approaching glow
+                if (!note.missed && Math.abs(timeDiff) < 0.3) {
+                    const glowAlpha = (1 - Math.abs(timeDiff) / 0.3) * 0.3;
+                    ctx.shadowColor = baseColor;
+                    ctx.shadowBlur = 12 * glowAlpha;
+                }
 
                 // Note body
                 ctx.fillStyle = color;
                 ctx.beginPath();
                 ctx.roundRect(noteX, noteY, noteW, noteH, 4);
                 ctx.fill();
+
+                ctx.shadowBlur = 0;
 
                 // Note head
                 if (!note.missed) {
@@ -629,13 +696,37 @@ const GameEngine = (() => {
                 }
             }
 
-            // Combo
+            // Render particles
+            this.particles.render(ctx);
+
+            // Render hit labels
+            for (const label of this.hitLabels) {
+                const alpha = Math.max(0, label.life / label.maxLife);
+                const scale = label.scale * (1 + (1 - alpha) * 0.3);
+                ctx.globalAlpha = alpha;
+                ctx.fillStyle = label.color;
+                ctx.font = `bold ${Math.round(14 * scale)}px sans-serif`;
+                ctx.textAlign = 'center';
+                ctx.shadowColor = label.color;
+                ctx.shadowBlur = 8;
+                ctx.fillText(label.text, label.x, label.y);
+                ctx.shadowBlur = 0;
+            }
+            ctx.globalAlpha = 1;
+
+            ctx.restore();
+
+            // Combo display
             if (this.combo >= 5) {
                 this.comboDisplay.textContent = `${this.combo}x`;
-                this.comboDisplay.style.color = this.combo >= 20 ? '#ff6bd6' :
+                const comboColor = this.combo >= 30 ? '#ff6bd6' :
+                    this.combo >= 20 ? '#ff4444' :
                     this.combo >= 10 ? '#ffa500' : '#48dbfb';
+                this.comboDisplay.style.color = comboColor;
+                this.comboDisplay.style.textShadow = `0 0 10px ${comboColor}`;
             } else {
                 this.comboDisplay.textContent = '';
+                this.comboDisplay.style.textShadow = '';
             }
         }
 
@@ -654,23 +745,45 @@ const GameEngine = (() => {
 
             if (bestNote) {
                 bestNote.hit = true;
+                const laneWidth = this.canvas.width / this.laneCount;
+                const hitX = (laneIndex + 0.5) * laneWidth;
                 let quality;
+
                 if (bestDist <= PERFECT_WINDOW) {
                     quality = 'perfect';
                     this.score += 100 * (1 + this.combo * 0.1);
                     this.hits.perfect++;
+                    // Big burst
+                    const color = this.config.laneColors[laneIndex] || '#48dbfb';
+                    this.particles.emit(hitX, this.hitZoneY, color, 12, 'burst');
+                    this.particles.emit(hitX, this.hitZoneY, '#fff', 6, 'spark');
+                    Effects.triggerBgPulse();
                 } else if (bestDist <= GOOD_WINDOW) {
                     quality = 'good';
                     this.score += 50 * (1 + this.combo * 0.05);
                     this.hits.good++;
+                    this.particles.emit(hitX, this.hitZoneY, '#ffa500', 6, 'burst');
                 } else {
                     quality = 'ok';
                     this.score += 25;
                     this.hits.ok++;
+                    this.particles.emit(hitX, this.hitZoneY, '#888', 3, 'burst');
                 }
 
                 this.combo++;
                 if (this.combo > this.maxCombo) this.maxCombo = this.combo;
+
+                // Hit label
+                const labelText = quality === 'perfect' ? 'PERFECT!' :
+                                  quality === 'good' ? 'GOOD' : 'OK';
+                const labelColor = quality === 'perfect' ? '#48dbfb' :
+                                   quality === 'good' ? '#ffa500' : '#aaa';
+                this.hitLabels.push({
+                    x: hitX, y: this.hitZoneY - 30,
+                    text: labelText, color: labelColor,
+                    life: 0.7, maxLife: 0.7,
+                    scale: quality === 'perfect' ? 1.4 : 1.0,
+                });
 
                 this.showHitFlash(quality);
                 Synth.playHitSound(quality);
@@ -767,18 +880,20 @@ const GameEngine = (() => {
             </div>`;
         }).join('');
 
-        startTime = performance.now() / 1000 + 3;
+        startTime = performance.now() / 1000 + 4; // 3s countdown + 1s buffer
 
-        setTimeout(() => {
+        isPlaying = true;
+        window.addEventListener('resize', handleResize);
+        handleResize();
+
+        // Show countdown, then enable input and start backing
+        Effects.showCountdown(3, () => {
+            document.addEventListener('keydown', handleKeyDown);
             for (const track of backingTracks) {
                 Synth.scheduleBackingTrack(track, 0);
             }
-        }, 3000);
+        });
 
-        isPlaying = true;
-        document.addEventListener('keydown', handleKeyDown);
-        window.addEventListener('resize', handleResize);
-        handleResize();
         gameLoop();
     }
 
@@ -806,6 +921,8 @@ const GameEngine = (() => {
         if (!isPlaying) return;
 
         const currentTime = performance.now() / 1000 - startTime;
+
+        Effects.updateBgPulse(0.016);
 
         for (const player of players) {
             player.update(currentTime);
@@ -840,6 +957,7 @@ const GameEngine = (() => {
         if (animFrameId) cancelAnimationFrame(animFrameId);
         document.removeEventListener('keydown', handleKeyDown);
         window.removeEventListener('resize', handleResize);
+        Effects.hideCountdown();
 
         for (const player of players) {
             if (player.destroy) player.destroy();

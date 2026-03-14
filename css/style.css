@@ -399,3 +399,77 @@ body {
     font-size: 3rem;
     margin: 10px 0;
 }
+
+/* Countdown overlay */
+.countdown-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 8rem;
+    font-weight: bold;
+    color: #fff;
+    z-index: 100;
+    pointer-events: none;
+    text-shadow: 0 0 40px rgba(72, 219, 251, 0.6), 0 0 80px rgba(72, 219, 251, 0.3);
+    background: rgba(0, 0, 0, 0.5);
+}
+
+.countdown-pop {
+    animation: countdownPop 0.6s ease-out;
+}
+
+.countdown-go {
+    color: #6bff6b;
+    text-shadow: 0 0 40px rgba(107, 255, 107, 0.6), 0 0 80px rgba(107, 255, 107, 0.3);
+    animation: countdownGo 0.5s ease-out;
+}
+
+@keyframes countdownPop {
+    0% { transform: scale(2); opacity: 0; }
+    30% { transform: scale(0.9); opacity: 1; }
+    50% { transform: scale(1.1); }
+    100% { transform: scale(1); opacity: 1; }
+}
+
+@keyframes countdownGo {
+    0% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(1.5); opacity: 1; }
+    100% { transform: scale(3); opacity: 0; }
+}
+
+/* Hit flash with ok state */
+.hit-flash.ok {
+    background: radial-gradient(ellipse at bottom, rgba(170, 170, 170, 0.2), transparent);
+    opacity: 1;
+}
+
+/* Result card entrance */
+.result-card {
+    animation: cardSlideIn 0.5s ease-out backwards;
+}
+
+.result-card:nth-child(1) { animation-delay: 0.1s; }
+.result-card:nth-child(2) { animation-delay: 0.25s; }
+.result-card:nth-child(3) { animation-delay: 0.4s; }
+.result-card:nth-child(4) { animation-delay: 0.55s; }
+
+@keyframes cardSlideIn {
+    from { transform: translateY(40px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+}
+
+/* Grade animation */
+.result-card .result-grade {
+    animation: gradeReveal 0.6s ease-out 0.3s backwards;
+}
+
+@keyframes gradeReveal {
+    0% { transform: scale(3); opacity: 0; }
+    60% { transform: scale(0.9); }
+    100% { transform: scale(1); opacity: 1; }
+}
