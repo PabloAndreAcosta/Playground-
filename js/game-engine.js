@@ -32,6 +32,10 @@ const GameEngine = (() => {
     let OK_WINDOW = BASE_OK_WINDOW;
     let currentDifficulty = 'medium';
 
+    // Practice mode state
+    let practiceMode = false;
+    let practiceTempo = 1.0;       // 0.25 - 1.0
+
     // Instrument definitions
     const INSTRUMENTS = {
         gitarr: {
@@ -864,7 +868,13 @@ const GameEngine = (() => {
     let onGameEnd = null;
     let backingTracks = [];
 
-    function start(song, playerConfigs, endCallback, difficulty) {
+    function setPracticeTempo(t) {
+        practiceTempo = Math.max(0.25, Math.min(1.0, t));
+    }
+
+    function start(song, playerConfigs, endCallback, difficulty, options) {
+        practiceMode = options && options.practice || false;
+        practiceTempo = options && options.tempo || 1.0;
         // Apply difficulty
         currentDifficulty = difficulty || 'medium';
         const preset = DIFFICULTY_PRESETS[currentDifficulty] || DIFFICULTY_PRESETS.medium;
@@ -874,11 +884,18 @@ const GameEngine = (() => {
         OK_WINDOW = BASE_OK_WINDOW * preset.windowMult;
 
         // Filter notes on a deep copy so original song data isn't mutated
+        const tempoScale = practiceMode ? (1 / practiceTempo) : 1;
         const filteredSong = {
             ...song,
+            duration: song.duration * tempoScale,
             tracks: song.tracks.map(t => ({
                 ...t,
-                notes: filterNotesForDifficulty([...t.notes], preset.noteKeepRatio),
+                notes: filterNotesForDifficulty([...t.notes], preset.noteKeepRatio).map(n => ({
+                    ...n,
+                    startTime: n.startTime * tempoScale,
+                    endTime: n.endTime ? n.endTime * tempoScale : undefined,
+                    duration: n.duration * tempoScale,
+                })),
             })),
         };
 
@@ -1014,12 +1031,16 @@ const GameEngine = (() => {
         }
 
         const scoreEl = document.getElementById('score-display');
-        scoreEl.innerHTML = players.map(p =>
-            `<div class="player-score">
-                <span class="dot" style="background:${p.color}"></span>
-                ${Math.round(p.score)}
-            </div>`
-        ).join('');
+        if (practiceMode) {
+            scoreEl.innerHTML = `<div class="practice-badge">&oplus; Övning ${Math.round(practiceTempo * 100)}%</div>`;
+        } else {
+            scoreEl.innerHTML = players.map(p =>
+                `<div class="player-score">
+                    <span class="dot" style="background:${p.color}"></span>
+                    ${Math.round(p.score)}
+                </div>`
+            ).join('');
+        }
 
         const progressEl = document.getElementById('song-progress');
         const mins = Math.floor(Math.max(0, currentTime) / 60);
@@ -1054,7 +1075,7 @@ const GameEngine = (() => {
         }
 
         if (onGameEnd) {
-            onGameEnd(players.map(p => p.getResults()));
+            onGameEnd(players.map(p => p.getResults()), practiceMode);
         }
     }
 
@@ -1062,5 +1083,5 @@ const GameEngine = (() => {
         return getInstrumentConfig(role);
     }
 
-    return { start, stop, getInstrumentForRole, PLAYER_COLORS, getDifficulty: () => currentDifficulty };
+    return { start, stop, getInstrumentForRole, PLAYER_COLORS, getDifficulty: () => currentDifficulty, setPracticeTempo, isPractice: () => practiceMode };
 })();

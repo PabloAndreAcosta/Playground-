@@ -12,6 +12,12 @@
         <h1 class="title">BandJam</h1>
         <p class="subtitle">Välj en låt och ett instrument - spela tillsammans!</p>
 
+        <div class="theme-selector">
+            <button class="theme-btn selected" data-theme="neon" title="Neon">&#127752;</button>
+            <button class="theme-btn" data-theme="retro" title="Retro">&#127918;</button>
+            <button class="theme-btn" data-theme="minimal" title="Minimal">&#9679;</button>
+        </div>
+
         <div class="lobby-container">
             <div class="song-select">
                 <h2>Välj låt</h2>
@@ -55,10 +61,33 @@
                     <!-- Player slots rendered by JS -->
                 </div>
                 <button id="add-player-btn" class="btn btn-secondary">+ Lägg till spelare</button>
+
+                <div class="mp-section">
+                    <h3>Online</h3>
+                    <div id="mp-status" class="mp-disconnected">Ej ansluten</div>
+                    <div class="mp-buttons">
+                        <button id="mp-create-btn" class="btn btn-small">Skapa rum</button>
+                        <button id="mp-join-btn" class="btn btn-small">Gå med</button>
+                    </div>
+                    <div id="mp-room-info" class="hidden">
+                        <div class="mp-room-code">Rum: <span id="mp-room-id"></span></div>
+                        <div id="mp-peers"></div>
+                        <button id="mp-leave-btn" class="btn btn-small">Lämna</button>
+                    </div>
+                </div>
             </div>
         </div>
 
-        <button id="start-game-btn" class="btn btn-primary btn-large" disabled>Starta!</button>
+        <div class="start-row">
+            <button id="start-game-btn" class="btn btn-primary btn-large" disabled>Starta!</button>
+            <button id="practice-btn" class="btn btn-secondary btn-large" disabled>Öva</button>
+            <button id="stats-btn" class="btn btn-secondary btn-large">Statistik</button>
+            <button id="ach-btn" class="btn btn-secondary btn-large">Achievements</button>
+        </div>
+        <div id="practice-options" class="hidden">
+            <label>Tempo: <span id="tempo-value">100%</span></label>
+            <input type="range" id="tempo-slider" min="25" max="100" value="100" step="5">
+        </div>
     </div>
 
     <!-- GAME SCREEN -->
@@ -75,7 +104,23 @@
         <div id="game-area">
             <!-- Canvas lanes rendered per player -->
         </div>
+        <div id="mp-scoreboard" class="hidden"></div>
         <div id="key-hints"></div>
+    </div>
+
+    <!-- ACHIEVEMENTS SCREEN -->
+    <div id="achievements-screen" class="screen">
+        <h1 class="stats-title">Achievements</h1>
+        <div id="ach-progress"></div>
+        <div id="achievements-container"></div>
+        <button id="ach-back-btn" class="btn btn-primary btn-large">Tillbaka</button>
+    </div>
+
+    <!-- STATS SCREEN -->
+    <div id="stats-screen" class="screen">
+        <h1 class="stats-title">Statistik</h1>
+        <div id="stats-container"></div>
+        <button id="stats-back-btn" class="btn btn-primary btn-large">Tillbaka</button>
     </div>
 
     <!-- RESULTS SCREEN -->
@@ -85,6 +130,9 @@
         <button id="play-again-btn" class="btn btn-primary btn-large">Spela igen</button>
     </div>
 
+    <script src="js/multiplayer.js"></script>
+    <script src="js/stats.js"></script>
+    <script src="js/achievements.js"></script>
     <script src="js/midi-parser.js"></script>
     <script src="js/synth.js"></script>
     <script src="js/effects.js"></script>

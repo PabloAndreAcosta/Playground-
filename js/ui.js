@@ -185,13 +185,16 @@ const UI = (() => {
 
     function validateStartButton() {
         const btn = document.getElementById('start-game-btn');
+        const practiceBtn = document.getElementById('practice-btn');
         const selections = playerSlots.map(s => s.element.querySelector('select').value).filter(v => v);
 
         const valid = selections.length > 0;
         const unique = new Set(selections);
         const noDupes = unique.size === selections.length;
 
-        btn.disabled = !valid || !noDupes;
+        const enabled = valid && noDupes;
+        btn.disabled = !enabled;
+        practiceBtn.disabled = !enabled;
 
         if (!noDupes && selections.length > 1) {
             btn.textContent = 'Två spelare kan inte ha samma instrument!';
@@ -218,17 +221,81 @@ const UI = (() => {
         });
     }
 
+    function setupThemeButtons() {
+        const saved = localStorage.getItem('bandjam_theme');
+        if (saved) {
+            document.body.setAttribute('data-theme', saved);
+            document.querySelectorAll('.theme-btn').forEach(b => {
+                b.classList.toggle('selected', b.dataset.theme === saved);
+            });
+        }
+        document.querySelectorAll('.theme-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.theme-btn').forEach(b => b.classList.remove('selected'));
+                btn.classList.add('selected');
+                const theme = btn.dataset.theme;
+                if (theme === 'neon') {
+                    document.body.removeAttribute('data-theme');
+                } else {
+                    document.body.setAttribute('data-theme', theme);
+                }
+                localStorage.setItem('bandjam_theme', theme);
+            });
+        });
+    }
+
     function setupButtons() {
         setupDifficultyButtons();
+        setupThemeButtons();
         document.getElementById('add-player-btn').addEventListener('click', addPlayerSlot);
 
         document.getElementById('start-game-btn').addEventListener('click', () => {
             if (!currentSong) return;
-            startGame();
+            startGame(false);
+        });
+
+        document.getElementById('practice-btn').addEventListener('click', () => {
+            if (!currentSong) return;
+            const opts = document.getElementById('practice-options');
+            if (opts.classList.contains('hidden')) {
+                opts.classList.remove('hidden');
+            } else {
+                const tempo = parseInt(document.getElementById('tempo-slider').value) / 100;
+                startGame(true, tempo);
+            }
+        });
+
+        document.getElementById('tempo-slider').addEventListener('input', (e) => {
+            document.getElementById('tempo-value').textContent = e.target.value + '%';
         });
 
         document.getElementById('volume-slider').addEventListener('input', (e) => {
             Synth.setVolume(parseInt(e.target.value) / 100);
+        });
+
+        // Multiplayer
+        Multiplayer.init({
+            onPeerJoin: (id, peers) => updateMpPeers(peers),
+            onPeerUpdate: (peers) => updateMpScoreboard(peers),
+            onGameStart: () => {},
+        });
+
+        document.getElementById('mp-create-btn').addEventListener('click', () => {
+            const roomId = Multiplayer.createRoom();
+            showMpRoom(roomId);
+        });
+
+        document.getElementById('mp-join-btn').addEventListener('click', () => {
+            const code = prompt('Ange rumskod:');
+            if (code && code.trim()) {
+                Multiplayer.joinRoom(code.trim());
+                showMpRoom(code.trim());
+            }
+        });
+
+        document.getElementById('mp-leave-btn').addEventListener('click', () => {
+            Multiplayer.leave();
+            hideMpRoom();
         });
 
         document.getElementById('back-btn').addEventListener('click', () => {
@@ -239,9 +306,29 @@ const UI = (() => {
         document.getElementById('play-again-btn').addEventListener('click', () => {
             showScreen('lobby-screen');
         });
+
+        document.getElementById('stats-btn').addEventListener('click', () => {
+            showScreen('stats-screen');
+            Stats.renderStatsScreen(document.getElementById('stats-container'));
+        });
+
+        document.getElementById('stats-back-btn').addEventListener('click', () => {
+            showScreen('lobby-screen');
+        });
+
+        document.getElementById('ach-btn').addEventListener('click', () => {
+            showScreen('achievements-screen');
+            const prog = Achievements.getProgress();
+            document.getElementById('ach-progress').textContent = `${prog.unlocked} / ${prog.total} upplåsta`;
+            Achievements.renderGallery(document.getElementById('achievements-container'));
+        });
+
+        document.getElementById('ach-back-btn').addEventListener('click', () => {
+            showScreen('lobby-screen');
+        });
     }
 
-    function startGame() {
+    function startGame(practice, tempo) {
         const playerConfigs = [];
         for (const slot of playerSlots) {
             const trackName = slot.element.querySelector('select').value;
@@ -254,8 +341,12 @@ const UI = (() => {
 
         if (playerConfigs.length === 0) return;
 
+        document.getElementById('practice-options').classList.add('hidden');
         showScreen('game-screen');
-        GameEngine.start(currentSong, playerConfigs, showResults, selectedDifficulty);
+        GameEngine.start(currentSong, playerConfigs, showResults, selectedDifficulty, {
+            practice: practice || false,
+            tempo: tempo || 1.0,
+        });
     }
 
     // ==================== HIGHSCORE ====================
@@ -316,18 +407,42 @@ const UI = (() => {
             </ol>`;
     }
 
-    function showResults(results) {
+    function showResults(results, wasPractice) {
         showScreen('results-screen');
+
+        if (wasPractice) {
+            const container = document.getElementById('results-container');
+            container.innerHTML = `<div class="practice-complete">
+                <h2>Övning klar!</h2>
+                <p>Bra jobbat! Ingen poäng sparas i övningsläge.</p>
+                ${results.map(r => `<div class="result-card">
+                    <h3>${r.trackName}</h3>
+                    <div class="result-details">
+                        Perfect: ${r.hits.perfect} | Good: ${r.hits.good} | OK: ${r.hits.ok}<br>
+                        Miss: ${r.hits.miss} | Max combo: ${r.combo}
+                    </div>
+                </div>`).join('')}
+            </div>`;
+            return;
+        }
 
         const diff = GameEngine.getDifficulty();
         const diffLabel = diff === 'easy' ? 'Easy' : diff === 'hard' ? 'Hard' : 'Medium';
         const diffColor = diff === 'easy' ? '#6bff6b' : diff === 'hard' ? '#ff6b6b' : '#48dbfb';
 
-        // Save highscores
+        // Save highscores + stats
         const songTitle = currentSong ? currentSong.title : 'Unknown';
         let allTopScores = [];
         for (const r of results) {
             allTopScores = saveHighscore(songTitle, diff, r);
+        }
+        Stats.record(songTitle, diff, results);
+
+        // Check achievements
+        const songList = MidiParser.getSongList().map(s => s.title);
+        const newAch = Achievements.checkAfterGame(results, diff, songTitle, songList);
+        for (const achId of newAch) {
+            Achievements.showToast(achId);
         }
 
         const container = document.getElementById('results-container');
@@ -373,6 +488,61 @@ const UI = (() => {
                     </li>`).join('')}
                 </ol>`;
         }
+    }
+
+    // ==================== MULTIPLAYER UI ====================
+
+    function showMpRoom(roomId) {
+        document.getElementById('mp-status').textContent = 'Ansluten';
+        document.getElementById('mp-status').className = 'mp-connected';
+        document.getElementById('mp-room-info').classList.remove('hidden');
+        document.getElementById('mp-room-id').textContent = roomId;
+        document.getElementById('mp-create-btn').classList.add('hidden');
+        document.getElementById('mp-join-btn').classList.add('hidden');
+    }
+
+    function hideMpRoom() {
+        document.getElementById('mp-status').textContent = 'Ej ansluten';
+        document.getElementById('mp-status').className = 'mp-disconnected';
+        document.getElementById('mp-room-info').classList.add('hidden');
+        document.getElementById('mp-create-btn').classList.remove('hidden');
+        document.getElementById('mp-join-btn').classList.remove('hidden');
+        document.getElementById('mp-peers').innerHTML = '';
+    }
+
+    function updateMpPeers(peers) {
+        const el = document.getElementById('mp-peers');
+        const entries = Object.entries(peers).filter(([,p]) => p.connected);
+        el.innerHTML = entries.map(([id, p]) =>
+            `<div class="mp-peer">${p.name} (${id.substring(0, 4)})</div>`
+        ).join('');
+    }
+
+    function updateMpScoreboard(peers) {
+        const el = document.getElementById('mp-scoreboard');
+        if (!el) return;
+        const entries = Object.entries(peers).filter(([,p]) => p.connected);
+        if (entries.length === 0) {
+            el.classList.add('hidden');
+            return;
+        }
+        el.classList.remove('hidden');
+        el.innerHTML = entries.map(([id, p]) =>
+            `<div class="mp-score-entry">
+                <span class="mp-score-name">${id.substring(0, 4)}</span>
+                <span class="mp-score-val">${Math.round(p.score)}</span>
+                <span class="mp-score-combo">${p.combo}x</span>
+            </div>`
+        ).join('');
+    }
+
+    // Periodically send score during game
+    let mpScoreInterval = null;
+    function startMpScoreSync() {
+        if (!Multiplayer.isConnected()) return;
+        mpScoreInterval = setInterval(() => {
+            // This is called from the game loop indirectly
+        }, 500);
     }
 
     function showScreen(screenId) {
