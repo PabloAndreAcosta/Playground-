@@ -400,6 +400,71 @@ body {
     margin: 10px 0;
 }
 
+/* Difficulty selector */
+.difficulty-select {
+    margin-top: 16px;
+}
+
+.difficulty-select h3 {
+    font-size: 0.95rem;
+    color: #888;
+    margin-bottom: 10px;
+}
+
+.difficulty-buttons {
+    display: flex;
+    gap: 8px;
+}
+
+.diff-btn {
+    flex: 1;
+    background: #1e1e3a;
+    border: 2px solid transparent;
+    border-radius: 8px;
+    padding: 10px 8px;
+    cursor: pointer;
+    text-align: center;
+    transition: all 0.2s;
+    color: #e0e0e0;
+}
+
+.diff-btn:hover {
+    border-color: #48dbfb;
+}
+
+.diff-btn.selected {
+    border-color: #48dbfb;
+    background: #1a2a3a;
+}
+
+.diff-btn[data-diff="easy"].selected {
+    border-color: #6bff6b;
+}
+
+.diff-btn[data-diff="hard"].selected {
+    border-color: #ff6b6b;
+}
+
+.diff-icon {
+    display: block;
+    font-size: 1rem;
+    margin-bottom: 4px;
+    color: #ffa500;
+}
+
+.diff-label {
+    display: block;
+    font-weight: bold;
+    font-size: 0.95rem;
+}
+
+.diff-desc {
+    display: block;
+    font-size: 0.7rem;
+    color: #666;
+    margin-top: 2px;
+}
+
 /* Countdown overlay */
 .countdown-overlay {
     position: fixed;

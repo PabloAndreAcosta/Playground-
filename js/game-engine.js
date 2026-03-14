@@ -11,10 +11,26 @@
 const GameEngine = (() => {
     const PLAYER_COLORS = ['#48dbfb', '#ff6b6b', '#ffa500', '#6bff6b'];
     const HIT_ZONE_Y_RATIO = 0.88;
-    const NOTE_SPEED = 300;
-    const PERFECT_WINDOW = 0.08;
-    const GOOD_WINDOW = 0.15;
-    const OK_WINDOW = 0.25;
+
+    // Base values (medium)
+    const BASE_NOTE_SPEED = 300;
+    const BASE_PERFECT_WINDOW = 0.08;
+    const BASE_GOOD_WINDOW = 0.15;
+    const BASE_OK_WINDOW = 0.25;
+
+    // Difficulty presets: [speedMult, windowMult, noteFilterRatio]
+    const DIFFICULTY_PRESETS = {
+        easy:   { speedMult: 0.7,  windowMult: 1.5, noteKeepRatio: 0.55 },
+        medium: { speedMult: 1.0,  windowMult: 1.0, noteKeepRatio: 1.0  },
+        hard:   { speedMult: 1.4,  windowMult: 0.6, noteKeepRatio: 1.0  },
+    };
+
+    // Active difficulty values (set on start)
+    let NOTE_SPEED = BASE_NOTE_SPEED;
+    let PERFECT_WINDOW = BASE_PERFECT_WINDOW;
+    let GOOD_WINDOW = BASE_GOOD_WINDOW;
+    let OK_WINDOW = BASE_OK_WINDOW;
+    let currentDifficulty = 'medium';
 
     // Instrument definitions
     const INSTRUMENTS = {
@@ -822,6 +838,24 @@ const GameEngine = (() => {
 
     // ==================== MAIN GAME STATE ====================
 
+    // Filter notes for easy mode — keep every Nth note, but always keep
+    // notes that start a new "phrase" (gap > 1s from previous)
+    function filterNotesForDifficulty(notes, keepRatio) {
+        if (keepRatio >= 1.0) return notes;
+        const result = [];
+        let kept = 0;
+        for (let i = 0; i < notes.length; i++) {
+            const isPhraseBoundary = i === 0 ||
+                (notes[i].startTime - notes[i - 1].startTime) > 1.0;
+            // Keep phrase boundaries and every Nth note
+            if (isPhraseBoundary || (i % Math.round(1 / keepRatio)) === 0) {
+                result.push(notes[i]);
+                kept++;
+            }
+        }
+        return result;
+    }
+
     let players = [];
     let songData = null;
     let startTime = 0;
@@ -830,8 +864,25 @@ const GameEngine = (() => {
     let onGameEnd = null;
     let backingTracks = [];
 
-    function start(song, playerConfigs, endCallback) {
-        songData = song;
+    function start(song, playerConfigs, endCallback, difficulty) {
+        // Apply difficulty
+        currentDifficulty = difficulty || 'medium';
+        const preset = DIFFICULTY_PRESETS[currentDifficulty] || DIFFICULTY_PRESETS.medium;
+        NOTE_SPEED = BASE_NOTE_SPEED * preset.speedMult;
+        PERFECT_WINDOW = BASE_PERFECT_WINDOW * preset.windowMult;
+        GOOD_WINDOW = BASE_GOOD_WINDOW * preset.windowMult;
+        OK_WINDOW = BASE_OK_WINDOW * preset.windowMult;
+
+        // Filter notes on a deep copy so original song data isn't mutated
+        const filteredSong = {
+            ...song,
+            tracks: song.tracks.map(t => ({
+                ...t,
+                notes: filterNotesForDifficulty([...t.notes], preset.noteKeepRatio),
+            })),
+        };
+
+        songData = filteredSong;
         onGameEnd = endCallback;
         players = [];
         backingTracks = [];
@@ -846,7 +897,7 @@ const GameEngine = (() => {
 
         for (let i = 0; i < playerConfigs.length; i++) {
             const cfg = playerConfigs[i];
-            const track = song.tracks.find(t => t.name === cfg.trackName || t.role === cfg.role);
+            const track = filteredSong.tracks.find(t => t.name === cfg.trackName || t.role === cfg.role);
             if (!track) continue;
 
             assignedTracks.add(track);
@@ -862,7 +913,7 @@ const GameEngine = (() => {
         }
 
         // Backing tracks
-        for (const track of song.tracks) {
+        for (const track of filteredSong.tracks) {
             if (!assignedTracks.has(track)) {
                 backingTracks.push(track);
             }
@@ -972,5 +1023,5 @@ const GameEngine = (() => {
         return getInstrumentConfig(role);
     }
 
-    return { start, stop, getInstrumentForRole, PLAYER_COLORS };
+    return { start, stop, getInstrumentForRole, PLAYER_COLORS, getDifficulty: () => currentDifficulty };
 })();

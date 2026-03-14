@@ -4,6 +4,7 @@
 const UI = (() => {
     let currentSong = null;
     let playerSlots = [];
+    let selectedDifficulty = 'medium';
     const MAX_PLAYERS = 4;
 
     function init() {
@@ -197,7 +198,19 @@ const UI = (() => {
         }
     }
 
+    function setupDifficultyButtons() {
+        const buttons = document.querySelectorAll('.diff-btn');
+        buttons.forEach(btn => {
+            btn.addEventListener('click', () => {
+                buttons.forEach(b => b.classList.remove('selected'));
+                btn.classList.add('selected');
+                selectedDifficulty = btn.dataset.diff;
+            });
+        });
+    }
+
     function setupButtons() {
+        setupDifficultyButtons();
         document.getElementById('add-player-btn').addEventListener('click', addPlayerSlot);
 
         document.getElementById('start-game-btn').addEventListener('click', () => {
@@ -229,14 +242,18 @@ const UI = (() => {
         if (playerConfigs.length === 0) return;
 
         showScreen('game-screen');
-        GameEngine.start(currentSong, playerConfigs, showResults);
+        GameEngine.start(currentSong, playerConfigs, showResults, selectedDifficulty);
     }
 
     function showResults(results) {
         showScreen('results-screen');
 
+        const diff = GameEngine.getDifficulty();
+        const diffLabel = diff === 'easy' ? 'Easy' : diff === 'hard' ? 'Hard' : 'Medium';
+        const diffColor = diff === 'easy' ? '#6bff6b' : diff === 'hard' ? '#ff6b6b' : '#48dbfb';
+
         const container = document.getElementById('results-container');
-        container.innerHTML = results.map(r => {
+        container.innerHTML = `<div style="width:100%;text-align:center;margin-bottom:12px;font-size:0.9rem;color:${diffColor}">Svårighetsgrad: ${diffLabel}</div>` + results.map(r => {
             const grade = r.accuracy >= 95 ? 'S' :
                           r.accuracy >= 85 ? 'A' :
                           r.accuracy >= 70 ? 'B' :
