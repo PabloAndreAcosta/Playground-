@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <rect width="100" height="100" rx="20" fill="#1a1a2e"/>
+  <text x="50" y="68" font-size="56" text-anchor="middle" fill="#e94560" font-family="sans-serif" font-weight="bold">B</text>
+  <line x1="20" y1="78" x2="80" y2="78" stroke="#0f3460" stroke-width="2"/>
+  <line x1="20" y1="83" x2="80" y2="83" stroke="#0f3460" stroke-width="2"/>
+  <line x1="20" y1="88" x2="80" y2="88" stroke="#0f3460" stroke-width="2"/>
+  <line x1="20" y1="93" x2="80" y2="93" stroke="#0f3460" stroke-width="2"/>
+</svg>
