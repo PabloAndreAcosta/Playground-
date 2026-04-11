@@ -15,6 +15,11 @@ export default function RootLayout({
   return (
     <html lang="sv" className="h-full antialiased">
       <body className="min-h-full flex flex-col bg-background text-foreground">
+        {process.env.BANKID_MOCK === "true" && (
+          <div className="bg-orange-500 text-white text-center text-xs py-1 font-medium">
+            TESTL&Auml;GE &mdash; Ingen riktig BankID-verifiering
+          </div>
+        )}
         <header className="border-b border-purple-100 dark:border-purple-900/30 bg-white/80 dark:bg-[#1a1025]/80 backdrop-blur-sm sticky top-0 z-50">
           <div className="max-w-lg mx-auto px-4 py-3 flex items-center justify-between">
             <a href="/" className="flex items-center gap-2">

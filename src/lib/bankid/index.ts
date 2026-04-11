@@ -1,13 +1,18 @@
 import type { BankIdClient } from "./types";
-import { createBankIdClient } from "./client";
 
 let _client: BankIdClient | null = null;
 
 export function getBankIdClient(): BankIdClient {
   if (!_client) {
-    _client = createBankIdClient();
+    if (process.env.BANKID_MOCK === "true") {
+      const { createMockBankIdClient } = require("./mock");
+      _client = createMockBankIdClient();
+    } else {
+      const { createBankIdClient } = require("./client");
+      _client = createBankIdClient();
+    }
   }
-  return _client;
+  return _client!;
 }
 
 export { computeQrData } from "./qr";
