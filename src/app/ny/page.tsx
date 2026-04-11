@@ -2,8 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { saveSession } from "@/lib/storage";
-import { ConsentSession } from "@/lib/types";
+import { BankIdSign } from "@/components/BankIdSign";
 
 const DEFAULT_AGREEMENTS = [
   "Vi deltar frivilligt och utan påtryckningar",
@@ -12,15 +11,27 @@ const DEFAULT_AGREEMENTS = [
   "Vi har diskuterat våra önskemål och gränser",
 ];
 
+type Phase = "form" | "signing" | "done";
+
+interface BankIdOrder {
+  orderRef: string;
+  autoStartToken: string;
+  qrStartToken: string;
+  qrStartSecret: string;
+  sessionId: string;
+}
+
 export default function NySession() {
   const router = useRouter();
-  const [initiatorName, setInitiatorName] = useState("");
-  const [partnerName, setPartnerName] = useState("");
+  const [phase, setPhase] = useState<Phase>("form");
   const [agreements, setAgreements] = useState<string[]>([
     ...DEFAULT_AGREEMENTS,
   ]);
   const [customAgreement, setCustomAgreement] = useState("");
   const [notes, setNotes] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const [bankIdOrder, setBankIdOrder] = useState<BankIdOrder | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   function addCustomAgreement() {
     const trimmed = customAgreement.trim();
@@ -34,81 +45,104 @@ export default function NySession() {
     setAgreements(agreements.filter((_, i) => i !== index));
   }
 
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!initiatorName.trim() || !partnerName.trim()) return;
+    if (agreements.length === 0) return;
 
-    const session: ConsentSession = {
-      id: crypto.randomUUID(),
-      initiatorName: initiatorName.trim(),
-      partnerName: partnerName.trim(),
-      createdAt: new Date().toISOString(),
-      status: "pending",
-      initiatorAgreements: [...agreements],
-      partnerAgreements: [],
-      beforeNotes: notes.trim() || undefined,
-    };
+    setIsSubmitting(true);
+    setError(null);
 
-    saveSession(session);
-    router.push(`/session/${session.id}`);
+    try {
+      const res = await fetch("/api/sessions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          agreements,
+          beforeNotes: notes.trim() || undefined,
+        }),
+      });
+
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error ?? "Något gick fel");
+      }
+
+      const data = await res.json();
+      setBankIdOrder({
+        orderRef: data.orderRef,
+        autoStartToken: data.autoStartToken,
+        qrStartToken: data.qrStartToken,
+        qrStartSecret: data.qrStartSecret,
+        sessionId: data.sessionId,
+      });
+      setPhase("signing");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Något gick fel");
+    } finally {
+      setIsSubmitting(false);
+    }
   }
 
-  const isValid = initiatorName.trim() && partnerName.trim() && agreements.length > 0;
+  if (phase === "signing" && bankIdOrder) {
+    return (
+      <div className="flex flex-col gap-6">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">
+            Signera med BankID
+          </h1>
+          <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-1">
+            Öppna BankID-appen och signera ditt samtycke.
+          </p>
+        </div>
+
+        <div className="bg-white dark:bg-[#1a1025] rounded-2xl p-5 border border-purple-50 dark:border-purple-900/30">
+          <BankIdSign
+            orderRef={bankIdOrder.orderRef}
+            autoStartToken={bankIdOrder.autoStartToken}
+            qrStartToken={bankIdOrder.qrStartToken}
+            qrStartSecret={bankIdOrder.qrStartSecret}
+            onComplete={() => {
+              setPhase("done");
+              router.push(`/session/${bankIdOrder.sessionId}`);
+            }}
+            onError={(msg) => setError(msg)}
+            onCancel={() => {
+              setPhase("form");
+              setBankIdOrder(null);
+            }}
+          />
+        </div>
+
+        {error && (
+          <div className="bg-red-50 dark:bg-red-900/20 rounded-xl p-3 text-sm text-red-700 dark:text-red-300">
+            {error}
+          </div>
+        )}
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col gap-6">
       <div>
         <h1 className="text-2xl font-bold tracking-tight">Nytt samtycke</h1>
         <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-1">
-          Skapa en ny samtyckessession mellan två parter.
+          Välj överenskommelser och signera med BankID.
         </p>
       </div>
 
-      <form onSubmit={handleSubmit} className="flex flex-col gap-5">
-        {/* Names */}
-        <div className="bg-white dark:bg-[#1a1025] rounded-2xl p-5 border border-purple-50 dark:border-purple-900/30 flex flex-col gap-4">
-          <h2 className="font-semibold">Deltagare</h2>
-          <div>
-            <label
-              htmlFor="initiator"
-              className="block text-sm font-medium mb-1"
-            >
-              Ditt namn
-            </label>
-            <input
-              id="initiator"
-              type="text"
-              value={initiatorName}
-              onChange={(e) => setInitiatorName(e.target.value)}
-              placeholder="Ditt namn"
-              className="w-full rounded-xl border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-900 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
-              required
-            />
-          </div>
-          <div>
-            <label
-              htmlFor="partner"
-              className="block text-sm font-medium mb-1"
-            >
-              Partnerns namn
-            </label>
-            <input
-              id="partner"
-              type="text"
-              value={partnerName}
-              onChange={(e) => setPartnerName(e.target.value)}
-              placeholder="Partnerns namn"
-              className="w-full rounded-xl border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-900 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
-              required
-            />
-          </div>
+      {error && (
+        <div className="bg-red-50 dark:bg-red-900/20 rounded-xl p-3 text-sm text-red-700 dark:text-red-300">
+          {error}
         </div>
+      )}
 
+      <form onSubmit={handleSubmit} className="flex flex-col gap-5">
         {/* Agreements */}
         <div className="bg-white dark:bg-[#1a1025] rounded-2xl p-5 border border-purple-50 dark:border-purple-900/30 flex flex-col gap-3">
           <h2 className="font-semibold">Överenskommelser</h2>
           <p className="text-xs text-zinc-400">
-            Dessa punkter bekräftar ni båda innan.
+            Dessa punkter signeras av båda parter med BankID.
           </p>
           <div className="flex flex-col gap-2">
             {agreements.map((agreement, index) => (
@@ -158,7 +192,7 @@ export default function NySession() {
           <textarea
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
-            placeholder="Eventuella anteckningar eller detaljer..."
+            placeholder="Eventuella anteckningar..."
             rows={3}
             className="w-full rounded-xl border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-900 px-4 py-3 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary/50"
           />
@@ -167,10 +201,19 @@ export default function NySession() {
         {/* Submit */}
         <button
           type="submit"
-          disabled={!isValid}
-          className="bg-gradient-to-r from-primary to-primary-light text-white font-semibold py-4 px-6 rounded-2xl shadow-md shadow-purple-200 dark:shadow-purple-900/20 hover:opacity-90 transition-opacity text-lg disabled:opacity-40 disabled:cursor-not-allowed"
+          disabled={agreements.length === 0 || isSubmitting}
+          className="bg-gradient-to-r from-primary to-primary-light text-white font-semibold py-4 px-6 rounded-2xl shadow-md shadow-purple-200 dark:shadow-purple-900/20 hover:opacity-90 transition-opacity text-lg disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2"
         >
-          Skapa session
+          {isSubmitting ? (
+            "Skapar session..."
+          ) : (
+            <>
+              <div className="w-5 h-5 rounded bg-white/20 flex items-center justify-center">
+                <span className="text-white font-bold text-[10px]">B</span>
+              </div>
+              Skapa och signera med BankID
+            </>
+          )}
         </button>
       </form>
     </div>

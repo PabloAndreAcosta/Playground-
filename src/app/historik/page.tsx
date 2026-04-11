@@ -2,53 +2,61 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { getSessions, deleteSession } from "@/lib/storage";
-import { ConsentSession } from "@/lib/types";
+import { StatusBadge } from "@/components/StatusBadge";
+import type { SessionStatus } from "@/lib/supabase/types";
 
-function StatusBadge({ status }: { status: ConsentSession["status"] }) {
-  const styles = {
-    pending:
-      "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300",
-    consented:
-      "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300",
-    confirmed:
-      "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300",
-    withdrawn:
-      "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300",
-  };
-  const labels = {
-    pending: "Inväntar",
-    consented: "Samtyckt",
-    confirmed: "Bekräftad",
-    withdrawn: "Återkallat",
-  };
-  return (
-    <span
-      className={`text-xs font-medium px-2 py-0.5 rounded-full ${styles[status]}`}
-    >
-      {labels[status]}
-    </span>
-  );
+interface SessionItem {
+  id: string;
+  status: SessionStatus;
+  initiatorName: string | null;
+  partnerName: string | null;
+  createdAt: string;
 }
 
 export default function Historik() {
-  const [sessions, setSessions] = useState<ConsentSession[]>([]);
-  const [filter, setFilter] = useState<ConsentSession["status"] | "all">(
-    "all"
-  );
+  const [sessions, setSessions] = useState<SessionItem[]>([]);
+  const [filter, setFilter] = useState<SessionStatus | "all">("all");
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    setSessions(getSessions());
+    fetch("/api/sessions")
+      .then((res) => res.json())
+      .then((data) => {
+        const items = (data.sessions ?? []).map(
+          (s: Record<string, unknown>) => ({
+            id: s.id,
+            status: s.status,
+            initiatorName: s.initiator_name,
+            partnerName: s.partner_name,
+            createdAt: s.created_at,
+          })
+        );
+        setSessions(items);
+      })
+      .catch(() => {})
+      .finally(() => setLoading(false));
   }, []);
 
   const filtered =
     filter === "all" ? sessions : sessions.filter((s) => s.status === filter);
 
-  function handleDelete(id: string) {
-    if (confirm("Är du säker på att du vill ta bort denna session?")) {
-      deleteSession(id);
-      setSessions(getSessions());
+  async function handleDelete(id: string) {
+    if (!confirm("Är du säker på att du vill ta bort denna session?")) return;
+
+    try {
+      await fetch(`/api/sessions/${id}`, { method: "DELETE" });
+      setSessions(sessions.filter((s) => s.id !== id));
+    } catch {
+      // Ignore
     }
+  }
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
   }
 
   return (
@@ -65,7 +73,8 @@ export default function Historik() {
         {(
           [
             ["all", "Alla"],
-            ["pending", "Pågående"],
+            ["pending_initiator", "Startar"],
+            ["pending_partner", "Inväntar"],
             ["consented", "Samtyckt"],
             ["confirmed", "Bekräftade"],
             ["withdrawn", "Återkallade"],
@@ -109,7 +118,10 @@ export default function Historik() {
               >
                 <div>
                   <p className="font-medium text-sm">
-                    {session.initiatorName} &amp; {session.partnerName}
+                    {session.initiatorName ?? "Väntar..."}
+                    {session.partnerName
+                      ? ` & ${session.partnerName}`
+                      : ""}
                   </p>
                   <p className="text-xs text-zinc-400 mt-0.5">
                     {new Date(session.createdAt).toLocaleString("sv-SE", {

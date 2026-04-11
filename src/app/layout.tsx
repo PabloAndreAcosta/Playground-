@@ -37,7 +37,16 @@ export default function RootLayout({
           {children}
         </main>
         <footer className="border-t border-purple-100 dark:border-purple-900/30 py-4 text-center text-xs text-zinc-400">
-          Concent &mdash; Trygghet genom transparens
+          <div className="flex items-center justify-center gap-2">
+            <span>Concent &mdash; Trygghet genom transparens</span>
+            <span>&middot;</span>
+            <span className="flex items-center gap-1">
+              <span className="inline-block w-4 h-4 rounded bg-blue-600 text-white font-bold text-[8px] leading-4 text-center">
+                B
+              </span>
+              Secured by BankID
+            </span>
+          </div>
         </footer>
       </body>
     </html>

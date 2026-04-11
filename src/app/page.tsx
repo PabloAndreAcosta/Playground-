@@ -2,40 +2,36 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { getSessions } from "@/lib/storage";
-import { ConsentSession } from "@/lib/types";
+import { StatusBadge } from "@/components/StatusBadge";
+import type { SessionStatus } from "@/lib/supabase/types";
 
-function StatusBadge({ status }: { status: ConsentSession["status"] }) {
-  const styles = {
-    pending:
-      "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300",
-    consented:
-      "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300",
-    confirmed:
-      "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300",
-    withdrawn:
-      "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300",
-  };
-  const labels = {
-    pending: "Inväntar samtycke",
-    consented: "Samtycke givet",
-    confirmed: "Bekräftad",
-    withdrawn: "Återkallat",
-  };
-  return (
-    <span
-      className={`text-xs font-medium px-2 py-0.5 rounded-full ${styles[status]}`}
-    >
-      {labels[status]}
-    </span>
-  );
+interface SessionSummary {
+  id: string;
+  status: SessionStatus;
+  initiatorName: string | null;
+  partnerName: string | null;
+  createdAt: string;
 }
 
 export default function Home() {
-  const [recentSessions, setRecentSessions] = useState<ConsentSession[]>([]);
+  const [recentSessions, setRecentSessions] = useState<SessionSummary[]>([]);
 
   useEffect(() => {
-    setRecentSessions(getSessions().slice(0, 3));
+    fetch("/api/sessions")
+      .then((res) => res.json())
+      .then((data) => {
+        const sessions = (data.sessions ?? []).slice(0, 3).map(
+          (s: Record<string, unknown>) => ({
+            id: s.id,
+            status: s.status,
+            initiatorName: s.initiator_name,
+            partnerName: s.partner_name,
+            createdAt: s.created_at,
+          })
+        );
+        setRecentSessions(sessions);
+      })
+      .catch(() => {});
   }, []);
 
   return (
@@ -47,8 +43,8 @@ export default function Home() {
         </div>
         <h1 className="text-3xl font-bold tracking-tight mb-2">Concent</h1>
         <p className="text-zinc-500 dark:text-zinc-400 max-w-xs mx-auto">
-          Dokumentera ömsesidigt samtycke &mdash; tryggt, tydligt och
-          respektfullt.
+          Dokumentera ömsesidigt samtycke &mdash; tryggt, juridiskt bindande
+          och signerat med BankID.
         </p>
       </section>
 
@@ -79,7 +75,7 @@ export default function Home() {
             <div>
               <p className="font-medium">Skapa en session</p>
               <p className="text-sm text-zinc-500 dark:text-zinc-400">
-                Ange båda parters namn och vad ni samtycker till.
+                Ange vad ni samtycker till och signera med BankID.
               </p>
             </div>
           </div>
@@ -88,9 +84,9 @@ export default function Home() {
               <span className="text-primary font-bold text-sm">2</span>
             </div>
             <div>
-              <p className="font-medium">Ge samtycke</p>
+              <p className="font-medium">Bjud in din partner</p>
               <p className="text-sm text-zinc-500 dark:text-zinc-400">
-                Båda parter bekräftar sitt samtycke innan.
+                Skicka en länk. Din partner signerar sitt samtycke med BankID.
               </p>
             </div>
           </div>
@@ -101,12 +97,20 @@ export default function Home() {
             <div>
               <p className="font-medium">Bekräfta efteråt</p>
               <p className="text-sm text-zinc-500 dark:text-zinc-400">
-                Båda bekräftar att allt gick bra och kändes rätt.
+                Båda signerar att allt gick bra. Juridiskt bindande med BankID.
               </p>
             </div>
           </div>
         </div>
       </section>
+
+      {/* BankID badge */}
+      <div className="flex items-center justify-center gap-2 text-xs text-zinc-400">
+        <div className="w-5 h-5 rounded bg-blue-600 flex items-center justify-center">
+          <span className="text-white font-bold text-[10px]">B</span>
+        </div>
+        <span>Signerat och verifierat med BankID</span>
+      </div>
 
       {/* Recent sessions */}
       {recentSessions.length > 0 && (
@@ -121,7 +125,10 @@ export default function Home() {
               >
                 <div>
                   <p className="font-medium text-sm">
-                    {session.initiatorName} &amp; {session.partnerName}
+                    {session.initiatorName ?? "Väntar..."}
+                    {session.partnerName
+                      ? ` & ${session.partnerName}`
+                      : ""}
                   </p>
                   <p className="text-xs text-zinc-400">
                     {new Date(session.createdAt).toLocaleDateString("sv-SE")}
