@@ -87,12 +87,34 @@ export default function NySession() {
     return (
       <div className="flex flex-col gap-6">
         <div>
+          <button
+            onClick={() => {
+              setPhase("form");
+              setBankIdOrder(null);
+            }}
+            className="text-sm text-primary hover:underline mb-2 inline-block"
+          >
+            &larr; Tillbaka
+          </button>
           <h1 className="text-2xl font-bold tracking-tight">
             Signera med BankID
           </h1>
           <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-1">
             Öppna BankID-appen och signera ditt samtycke.
           </p>
+        </div>
+
+        {/* Summary of what's being signed */}
+        <div className="bg-purple-50 dark:bg-purple-900/20 rounded-xl p-4 border border-purple-100 dark:border-purple-800">
+          <p className="text-xs font-medium text-zinc-500 mb-2">Du signerar:</p>
+          <ul className="text-sm flex flex-col gap-1">
+            {agreements.map((a, i) => (
+              <li key={i} className="flex gap-2">
+                <span className="text-primary">&#10003;</span>
+                <span>{a}</span>
+              </li>
+            ))}
+          </ul>
         </div>
 
         <div className="bg-white dark:bg-[#1a1025] rounded-2xl p-5 border border-purple-50 dark:border-purple-900/30">
@@ -125,9 +147,15 @@ export default function NySession() {
   return (
     <div className="flex flex-col gap-6">
       <div>
+        <button
+          onClick={() => router.push("/")}
+          className="text-sm text-primary hover:underline mb-2 inline-block"
+        >
+          &larr; Tillbaka
+        </button>
         <h1 className="text-2xl font-bold tracking-tight">Nytt samtycke</h1>
         <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-1">
-          Välj överenskommelser och signera med BankID.
+          Välj vad ni samtycker till. Båda signerar med BankID.
         </p>
       </div>
 
@@ -155,7 +183,7 @@ export default function NySession() {
                 <button
                   type="button"
                   onClick={() => removeAgreement(index)}
-                  className="text-zinc-400 hover:text-red-500 text-sm"
+                  className="text-zinc-400 hover:text-red-500 text-sm transition-colors"
                 >
                   &#10005;
                 </button>
@@ -188,11 +216,11 @@ export default function NySession() {
 
         {/* Notes */}
         <div className="bg-white dark:bg-[#1a1025] rounded-2xl p-5 border border-purple-50 dark:border-purple-900/30 flex flex-col gap-3">
-          <h2 className="font-semibold">Anteckningar (valfritt)</h2>
+          <h2 className="font-semibold">Anteckningar <span className="text-zinc-400 font-normal text-sm">(valfritt)</span></h2>
           <textarea
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
-            placeholder="Eventuella anteckningar..."
+            placeholder="T.ex. specifika gränser eller önskemål ni pratat om..."
             rows={3}
             className="w-full rounded-xl border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-900 px-4 py-3 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary/50"
           />
@@ -205,7 +233,10 @@ export default function NySession() {
           className="bg-gradient-to-r from-primary to-primary-light text-white font-semibold py-4 px-6 rounded-2xl shadow-md shadow-purple-200 dark:shadow-purple-900/20 hover:opacity-90 transition-opacity text-lg disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2"
         >
           {isSubmitting ? (
-            "Skapar session..."
+            <span className="flex items-center gap-2">
+              <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+              Skapar...
+            </span>
           ) : (
             <>
               <div className="w-5 h-5 rounded bg-white/20 flex items-center justify-center">
@@ -215,6 +246,12 @@ export default function NySession() {
             </>
           )}
         </button>
+
+        {/* Info text */}
+        <p className="text-xs text-zinc-400 text-center">
+          Efter signering får du en länk att skicka till din partner.
+          Bekräftelsen öppnas efter 3 dagar.
+        </p>
       </form>
     </div>
   );

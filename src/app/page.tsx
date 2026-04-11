@@ -37,18 +37,20 @@ export default function Home() {
   return (
     <div className="flex flex-col gap-8">
       {/* Hero */}
-      <section className="text-center pt-8 pb-4">
-        <div className="w-20 h-20 mx-auto mb-4 rounded-full bg-gradient-to-br from-primary to-primary-light flex items-center justify-center shadow-lg shadow-purple-200 dark:shadow-purple-900/30">
+      <section className="text-center pt-8 pb-2">
+        <div className="w-20 h-20 mx-auto mb-5 rounded-full bg-gradient-to-br from-primary to-primary-light flex items-center justify-center shadow-lg shadow-purple-200 dark:shadow-purple-900/30">
           <span className="text-white font-bold text-3xl">C</span>
         </div>
-        <h1 className="text-3xl font-bold tracking-tight mb-2">Concent</h1>
-        <p className="text-zinc-500 dark:text-zinc-400 max-w-xs mx-auto">
-          Dokumentera ömsesidigt samtycke &mdash; tryggt, juridiskt bindande
-          och signerat med BankID.
+        <h1 className="text-3xl font-bold tracking-tight mb-3">
+          Skydda dig. Skydda varandra.
+        </h1>
+        <p className="text-zinc-500 dark:text-zinc-400 max-w-sm mx-auto leading-relaxed">
+          Concent dokumenterar ömsesidigt samtycke med BankID-signering
+          &mdash; före och efter. Som en kondom, fast för trygghet och ansvar.
         </p>
       </section>
 
-      {/* Actions */}
+      {/* CTA */}
       <section className="flex flex-col gap-3">
         <Link
           href="/ny"
@@ -56,55 +58,62 @@ export default function Home() {
         >
           Nytt samtycke
         </Link>
-        <Link
-          href="/historik"
-          className="flex items-center justify-center gap-2 border-2 border-purple-200 dark:border-purple-800 text-primary-light font-medium py-3 px-6 rounded-2xl hover:bg-purple-50 dark:hover:bg-purple-900/20 transition-colors"
-        >
-          Visa historik
-        </Link>
       </section>
 
       {/* How it works */}
       <section className="bg-white dark:bg-[#1a1025] rounded-2xl p-6 shadow-sm border border-purple-50 dark:border-purple-900/30">
         <h2 className="font-semibold text-lg mb-4">Så fungerar det</h2>
-        <div className="flex flex-col gap-4">
-          <div className="flex gap-3">
-            <div className="w-8 h-8 rounded-full bg-purple-100 dark:bg-purple-900/40 flex items-center justify-center shrink-0">
-              <span className="text-primary font-bold text-sm">1</span>
-            </div>
-            <div>
-              <p className="font-medium">Skapa en session</p>
-              <p className="text-sm text-zinc-500 dark:text-zinc-400">
-                Ange vad ni samtycker till och signera med BankID.
-              </p>
-            </div>
-          </div>
-          <div className="flex gap-3">
-            <div className="w-8 h-8 rounded-full bg-purple-100 dark:bg-purple-900/40 flex items-center justify-center shrink-0">
-              <span className="text-primary font-bold text-sm">2</span>
-            </div>
-            <div>
-              <p className="font-medium">Bjud in din partner</p>
-              <p className="text-sm text-zinc-500 dark:text-zinc-400">
-                Skicka en länk. Din partner signerar sitt samtycke med BankID.
-              </p>
-            </div>
-          </div>
-          <div className="flex gap-3">
-            <div className="w-8 h-8 rounded-full bg-purple-100 dark:bg-purple-900/40 flex items-center justify-center shrink-0">
-              <span className="text-primary font-bold text-sm">3</span>
-            </div>
-            <div>
-              <p className="font-medium">Bekräfta efteråt</p>
-              <p className="text-sm text-zinc-500 dark:text-zinc-400">
-                Båda signerar att allt gick bra. Juridiskt bindande med BankID.
-              </p>
-            </div>
-          </div>
+        <div className="flex flex-col gap-5">
+          <Step n={1} title="Innan">
+            Ni anger vad ni samtycker till. Båda signerar med BankID.
+          </Step>
+          <Step n={2} title="3 dagar senare">
+            Båda bekräftar att allt gick bra &mdash; i lugn och ro, utan press.
+          </Step>
+          <Step n={3} title="Alltid">
+            Vem som helst kan när som helst återkalla sitt samtycke, signerat
+            med BankID som bevis.
+          </Step>
         </div>
       </section>
 
-      {/* BankID badge */}
+      {/* Why section */}
+      <section className="bg-white dark:bg-[#1a1025] rounded-2xl p-6 shadow-sm border border-purple-50 dark:border-purple-900/30">
+        <h2 className="font-semibold text-lg mb-3">Varför Concent?</h2>
+        <ul className="flex flex-col gap-3 text-sm text-zinc-600 dark:text-zinc-400">
+          <li className="flex gap-2">
+            <span className="text-primary shrink-0">&#9679;</span>
+            <span>
+              <strong className="text-foreground">Skydd för alla parter.</strong>{" "}
+              Dokumentation som skyddar båda &mdash; inte bara den ena.
+            </span>
+          </li>
+          <li className="flex gap-2">
+            <span className="text-primary shrink-0">&#9679;</span>
+            <span>
+              <strong className="text-foreground">Juridiskt verifierbart.</strong>{" "}
+              BankID-signaturer med personnummer, tidstämpel och spårbarhet.
+            </span>
+          </li>
+          <li className="flex gap-2">
+            <span className="text-primary shrink-0">&#9679;</span>
+            <span>
+              <strong className="text-foreground">Betänketid inbyggd.</strong>{" "}
+              Efterbekräftelsen sker efter 3 dagar &mdash; utan stress eller
+              påtryckningar.
+            </span>
+          </li>
+          <li className="flex gap-2">
+            <span className="text-primary shrink-0">&#9679;</span>
+            <span>
+              <strong className="text-foreground">Kan alltid återkallas.</strong>{" "}
+              Samtycke är inte permanent. Återkallande signeras också med BankID.
+            </span>
+          </li>
+        </ul>
+      </section>
+
+      {/* BankID trust badge */}
       <div className="flex items-center justify-center gap-2 text-xs text-zinc-400">
         <div className="w-5 h-5 rounded bg-blue-600 flex items-center justify-center">
           <span className="text-white font-bold text-[10px]">B</span>
@@ -115,7 +124,15 @@ export default function Home() {
       {/* Recent sessions */}
       {recentSessions.length > 0 && (
         <section>
-          <h2 className="font-semibold text-lg mb-3">Senaste sessioner</h2>
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="font-semibold text-lg">Senaste</h2>
+            <Link
+              href="/historik"
+              className="text-sm text-primary hover:underline"
+            >
+              Visa alla
+            </Link>
+          </div>
           <div className="flex flex-col gap-2">
             {recentSessions.map((session) => (
               <Link
@@ -126,9 +143,7 @@ export default function Home() {
                 <div>
                   <p className="font-medium text-sm">
                     {session.initiatorName ?? "Väntar..."}
-                    {session.partnerName
-                      ? ` & ${session.partnerName}`
-                      : ""}
+                    {session.partnerName ? ` & ${session.partnerName}` : ""}
                   </p>
                   <p className="text-xs text-zinc-400">
                     {new Date(session.createdAt).toLocaleDateString("sv-SE")}
@@ -140,6 +155,20 @@ export default function Home() {
           </div>
         </section>
       )}
+    </div>
+  );
+}
+
+function Step({ n, title, children }: { n: number; title: string; children: React.ReactNode }) {
+  return (
+    <div className="flex gap-3">
+      <div className="w-8 h-8 rounded-full bg-purple-100 dark:bg-purple-900/40 flex items-center justify-center shrink-0">
+        <span className="text-primary font-bold text-sm">{n}</span>
+      </div>
+      <div>
+        <p className="font-medium">{title}</p>
+        <p className="text-sm text-zinc-500 dark:text-zinc-400">{children}</p>
+      </div>
     </div>
   );
 }

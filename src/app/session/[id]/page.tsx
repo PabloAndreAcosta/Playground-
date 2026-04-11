@@ -7,6 +7,8 @@ import { StatusBadge } from "@/components/StatusBadge";
 import { ShareLink } from "@/components/ShareLink";
 import type { SessionStatus, SignerRole, SignAction } from "@/lib/supabase/types";
 
+const CONFIRMATION_DELAY_MS = 3 * 24 * 60 * 60 * 1000; // 3 days
+
 interface SessionData {
   id: string;
   status: SessionStatus;
@@ -61,6 +63,7 @@ export default function SessionPage() {
     action: SignAction;
   } | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [now, setNow] = useState(Date.now());
 
   const fetchSession = useCallback(async () => {
     try {
@@ -80,6 +83,12 @@ export default function SessionPage() {
   useEffect(() => {
     fetchSession();
   }, [fetchSession]);
+
+  // Tick every minute to update countdown
+  useEffect(() => {
+    const timer = setInterval(() => setNow(Date.now()), 60_000);
+    return () => clearInterval(timer);
+  }, []);
 
   async function startBankIdSign(role: SignerRole, action: SignAction) {
     setError(null);
@@ -103,6 +112,34 @@ export default function SessionPage() {
     } catch (err) {
       setError(err instanceof Error ? err.message : "Något gick fel");
     }
+  }
+
+  // Calculate if confirmation is unlocked (3 days after consent was given)
+  function getConfirmationUnlockTime(): Date | null {
+    if (!session) return null;
+    // Use consentGivenAt if set, otherwise find the latest consent signature
+    const consentTime = session.consentGivenAt
+      ?? signatures.find((s) => s.action === "consent" && s.signerRole === "partner")?.completedAt
+      ?? session.createdAt;
+    return new Date(new Date(consentTime).getTime() + CONFIRMATION_DELAY_MS);
+  }
+
+  function isConfirmationUnlocked(): boolean {
+    const unlockTime = getConfirmationUnlockTime();
+    if (!unlockTime) return false;
+    return now >= unlockTime.getTime();
+  }
+
+  function formatTimeRemaining(): string {
+    const unlockTime = getConfirmationUnlockTime();
+    if (!unlockTime) return "";
+    const diff = unlockTime.getTime() - now;
+    if (diff <= 0) return "";
+    const hours = Math.floor(diff / (1000 * 60 * 60));
+    const days = Math.floor(hours / 24);
+    const remainingHours = hours % 24;
+    if (days > 0) return `${days}d ${remainingHours}h`;
+    return `${remainingHours}h`;
   }
 
   if (loading) {
@@ -129,6 +166,12 @@ export default function SessionPage() {
 
   // If BankID signing is in progress
   if (bankIdOrder && signingAction) {
+    const actionLabels: Record<SignAction, string> = {
+      consent: "Signera samtycke",
+      confirm: "Bekräfta att allt gick bra",
+      withdraw: "Återkalla samtycke",
+    };
+
     return (
       <div className="flex flex-col gap-6">
         <div>
@@ -142,8 +185,11 @@ export default function SessionPage() {
             &larr; Tillbaka
           </button>
           <h1 className="text-2xl font-bold tracking-tight">
-            Signera med BankID
+            {actionLabels[signingAction.action]}
           </h1>
+          <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-1">
+            Öppna BankID-appen och signera.
+          </p>
         </div>
 
         <div className="bg-white dark:bg-[#1a1025] rounded-2xl p-5 border border-purple-50 dark:border-purple-900/30">
@@ -173,6 +219,9 @@ export default function SessionPage() {
       </div>
     );
   }
+
+  const unlocked = isConfirmationUnlocked();
+  const timeLeft = formatTimeRemaining();
 
   return (
     <div className="flex flex-col gap-5">
@@ -206,9 +255,128 @@ export default function SessionPage() {
         </div>
       )}
 
-      {/* Share link when waiting for partner */}
+      {/* Status-specific sections */}
+
+      {/* Pending initiator */}
+      {session.status === "pending_initiator" && (
+        <div className="bg-yellow-50 dark:bg-yellow-900/20 rounded-2xl p-5 border border-yellow-200 dark:border-yellow-800 text-center">
+          <p className="font-semibold text-yellow-800 dark:text-yellow-200">
+            Inväntar din BankID-signering
+          </p>
+          <p className="text-sm text-yellow-600 dark:text-yellow-400 mt-1">
+            Signera med BankID för att skapa samtycket.
+          </p>
+        </div>
+      )}
+
+      {/* Pending partner — show share link */}
       {session.status === "pending_partner" && (
-        <ShareLink shareToken={session.shareToken} />
+        <>
+          <ShareLink shareToken={session.shareToken} />
+          <div className="bg-orange-50 dark:bg-orange-900/20 rounded-2xl p-5 border border-orange-200 dark:border-orange-800 text-center">
+            <p className="font-semibold text-orange-800 dark:text-orange-200">
+              Inväntar partner
+            </p>
+            <p className="text-sm text-orange-600 dark:text-orange-400 mt-1">
+              Skicka länken ovan. Din partner signerar sitt samtycke med BankID.
+            </p>
+          </div>
+        </>
+      )}
+
+      {/* Consented — confirmation section with 3-day delay */}
+      {session.status === "consented" && (
+        <div className="bg-white dark:bg-[#1a1025] rounded-2xl p-5 border border-purple-50 dark:border-purple-900/30 flex flex-col gap-4">
+          <div>
+            <h2 className="font-semibold">Bekräfta efteråt</h2>
+            <p className="text-sm text-zinc-500 mt-1">
+              Bekräfta med BankID att allt gick bra. Betänketiden säkerställer
+              att bekräftelsen sker utan press.
+            </p>
+          </div>
+
+          {!unlocked ? (
+            /* Countdown — not yet unlocked */
+            <div className="bg-purple-50 dark:bg-purple-900/20 rounded-xl p-4 text-center">
+              <div className="text-2xl font-bold text-primary mb-1">
+                {timeLeft}
+              </div>
+              <p className="text-sm text-zinc-500">
+                Bekräftelsen öppnas om {timeLeft}. Betänketiden finns för att
+                ge båda parter tid att reflektera i lugn och ro.
+              </p>
+            </div>
+          ) : (
+            /* Unlocked — show confirmation buttons */
+            <div className="flex flex-col gap-2">
+              <ConfirmRow
+                name={session.initiatorName}
+                confirmed={session.initiatorConfirmedAfter}
+                onConfirm={() => startBankIdSign("initiator", "confirm")}
+              />
+              <ConfirmRow
+                name={session.partnerName}
+                confirmed={session.partnerConfirmedAfter}
+                onConfirm={() => startBankIdSign("partner", "confirm")}
+              />
+            </div>
+          )}
+
+          <div className="pt-2 border-t border-zinc-100 dark:border-zinc-800">
+            <button
+              onClick={() => {
+                if (confirm("Vill du verkligen återkalla samtycket? Denna åtgärd signeras med BankID och kan inte ångras.")) {
+                  startBankIdSign("initiator", "withdraw");
+                }
+              }}
+              className="text-red-500 text-sm hover:underline"
+            >
+              Återkalla samtycke
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Confirmed */}
+      {session.status === "confirmed" && (
+        <div className="bg-green-50 dark:bg-green-900/20 rounded-2xl p-5 border border-green-200 dark:border-green-800 text-center">
+          <div className="w-12 h-12 mx-auto mb-3 rounded-full bg-green-100 dark:bg-green-900/40 flex items-center justify-center">
+            <span className="text-green-600 text-2xl">&#10003;</span>
+          </div>
+          <p className="font-semibold text-green-800 dark:text-green-200">
+            Allt bekräftat
+          </p>
+          <p className="text-sm text-green-700 dark:text-green-300 mt-1">
+            Båda parter har signerat med BankID att allt gick bra.
+          </p>
+          {session.confirmationAt && (
+            <p className="text-xs text-green-500 mt-2">
+              Bekräftad{" "}
+              {new Date(session.confirmationAt).toLocaleString("sv-SE", {
+                dateStyle: "long",
+                timeStyle: "short",
+              })}
+            </p>
+          )}
+        </div>
+      )}
+
+      {/* Withdrawn */}
+      {session.status === "withdrawn" && (
+        <div className="bg-red-50 dark:bg-red-900/20 rounded-2xl p-5 border border-red-200 dark:border-red-800 text-center">
+          <p className="font-semibold text-red-800 dark:text-red-200">
+            Samtycke har återkallats
+          </p>
+          <p className="text-sm text-red-600 dark:text-red-400 mt-1">
+            Återkallat av {session.withdrawnBy}
+            {session.withdrawnAt && (
+              <> &middot; {new Date(session.withdrawnAt).toLocaleString("sv-SE", {
+                dateStyle: "long",
+                timeStyle: "short",
+              })}</>
+            )}
+          </p>
+        </div>
       )}
 
       {/* Agreements */}
@@ -235,7 +403,7 @@ export default function SessionPage() {
         )}
       </div>
 
-      {/* Signatures */}
+      {/* BankID Signatures */}
       {signatures.length > 0 && (
         <div className="bg-white dark:bg-[#1a1025] rounded-2xl p-5 border border-purple-50 dark:border-purple-900/30">
           <h2 className="font-semibold mb-3">BankID-signaturer</h2>
@@ -248,14 +416,13 @@ export default function SessionPage() {
                 <div className="w-6 h-6 rounded bg-blue-600 flex items-center justify-center shrink-0">
                   <span className="text-white font-bold text-[10px]">B</span>
                 </div>
-                <div className="flex-1">
+                <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium">{sig.signerName}</p>
                   <p className="text-xs text-zinc-400">
                     {sig.action === "consent" && "Samtycke signerat"}
                     {sig.action === "confirm" && "Bekräftelse signerad"}
                     {sig.action === "withdraw" && "Återkallande signerat"}
-                    {" "}
-                    &middot;{" "}
+                    {" "}&middot;{" "}
                     {new Date(sig.completedAt).toLocaleString("sv-SE")}
                   </p>
                 </div>
@@ -265,121 +432,13 @@ export default function SessionPage() {
         </div>
       )}
 
-      {/* Actions based on status */}
-      {session.status === "consented" && (
-        <div className="bg-white dark:bg-[#1a1025] rounded-2xl p-5 border border-purple-50 dark:border-purple-900/30 flex flex-col gap-4">
-          <h2 className="font-semibold">Bekräfta efteråt</h2>
-          <p className="text-sm text-zinc-500">
-            Bekräfta med BankID att allt gick bra.
-          </p>
-
-          <div className="flex flex-col gap-2">
-            <div className="flex items-center justify-between bg-zinc-50 dark:bg-zinc-900 rounded-xl px-4 py-3">
-              <span className="text-sm font-medium">
-                {session.initiatorName}
-              </span>
-              {session.initiatorConfirmedAfter ? (
-                <span className="text-green-600 text-sm font-medium flex items-center gap-1">
-                  <div className="w-4 h-4 rounded bg-blue-600 flex items-center justify-center">
-                    <span className="text-white font-bold text-[8px]">B</span>
-                  </div>
-                  Bekräftad
-                </span>
-              ) : (
-                <button
-                  onClick={() => startBankIdSign("initiator", "confirm")}
-                  className="bg-success text-white text-sm font-medium px-4 py-1.5 rounded-lg hover:opacity-90 transition-opacity"
-                >
-                  Bekräfta med BankID
-                </button>
-              )}
-            </div>
-            <div className="flex items-center justify-between bg-zinc-50 dark:bg-zinc-900 rounded-xl px-4 py-3">
-              <span className="text-sm font-medium">
-                {session.partnerName}
-              </span>
-              {session.partnerConfirmedAfter ? (
-                <span className="text-green-600 text-sm font-medium flex items-center gap-1">
-                  <div className="w-4 h-4 rounded bg-blue-600 flex items-center justify-center">
-                    <span className="text-white font-bold text-[8px]">B</span>
-                  </div>
-                  Bekräftad
-                </span>
-              ) : (
-                <button
-                  onClick={() => startBankIdSign("partner", "confirm")}
-                  className="bg-success text-white text-sm font-medium px-4 py-1.5 rounded-lg hover:opacity-90 transition-opacity"
-                >
-                  Bekräfta med BankID
-                </button>
-              )}
-            </div>
-          </div>
-
-          <button
-            onClick={() => startBankIdSign("initiator", "withdraw")}
-            className="text-red-500 text-sm hover:underline self-start"
-          >
-            Återkalla samtycke med BankID
-          </button>
-        </div>
-      )}
-
-      {session.status === "confirmed" && (
-        <div className="bg-green-50 dark:bg-green-900/20 rounded-2xl p-5 border border-green-200 dark:border-green-800 text-center">
-          <div className="text-4xl mb-2">&#10003;</div>
-          <p className="font-semibold text-green-800 dark:text-green-200">
-            Allt bekräftat med BankID
-          </p>
-          <p className="text-sm text-green-700 dark:text-green-300 mt-1">
-            Båda parter har signerat med BankID att allt gick bra.
-          </p>
-          {session.confirmationAt && (
-            <p className="text-xs text-green-500 mt-2">
-              Bekräftad{" "}
-              {new Date(session.confirmationAt).toLocaleString("sv-SE", {
-                dateStyle: "long",
-                timeStyle: "short",
-              })}
-            </p>
-          )}
-        </div>
-      )}
-
-      {session.status === "withdrawn" && (
-        <div className="bg-red-50 dark:bg-red-900/20 rounded-2xl p-5 border border-red-200 dark:border-red-800 text-center">
-          <p className="font-semibold text-red-800 dark:text-red-200">
-            Samtycke har återkallats
-          </p>
-          <p className="text-sm text-red-600 dark:text-red-400 mt-1">
-            Återkallat av {session.withdrawnBy}{" "}
-            {session.withdrawnAt &&
-              new Date(session.withdrawnAt).toLocaleString("sv-SE", {
-                dateStyle: "long",
-                timeStyle: "short",
-              })}
-          </p>
-        </div>
-      )}
-
-      {/* Pending partner status */}
-      {session.status === "pending_partner" && (
-        <div className="bg-orange-50 dark:bg-orange-900/20 rounded-2xl p-5 border border-orange-200 dark:border-orange-800 text-center">
-          <p className="font-semibold text-orange-800 dark:text-orange-200">
-            Inväntar partner
-          </p>
-          <p className="text-sm text-orange-600 dark:text-orange-400 mt-1">
-            Skicka länken ovan till din partner för att de ska kunna signera
-            sitt samtycke med BankID.
-          </p>
-        </div>
-      )}
-
-      {/* Timeline / Audit log */}
+      {/* Audit log */}
       {auditLog.length > 0 && (
-        <div className="bg-white dark:bg-[#1a1025] rounded-2xl p-5 border border-purple-50 dark:border-purple-900/30">
-          <h2 className="font-semibold mb-3">Händelselogg</h2>
-          <div className="flex flex-col gap-3">
+        <details className="bg-white dark:bg-[#1a1025] rounded-2xl border border-purple-50 dark:border-purple-900/30">
+          <summary className="p-5 font-semibold cursor-pointer select-none">
+            Händelselogg
+          </summary>
+          <div className="px-5 pb-5 flex flex-col gap-3">
             {auditLog.map((entry) => (
               <div key={entry.id} className="flex gap-3 items-start">
                 <div className="w-2 h-2 rounded-full bg-primary mt-1.5 shrink-0" />
@@ -388,8 +447,7 @@ export default function SessionPage() {
                     {formatEventType(entry.event_type)}
                     {entry.actor_name && (
                       <span className="text-zinc-400 font-normal">
-                        {" "}
-                        &middot; {entry.actor_name}
+                        {" "}&middot; {entry.actor_name}
                       </span>
                     )}
                   </p>
@@ -400,7 +458,41 @@ export default function SessionPage() {
               </div>
             ))}
           </div>
-        </div>
+        </details>
+      )}
+    </div>
+  );
+}
+
+function ConfirmRow({
+  name,
+  confirmed,
+  onConfirm,
+}: {
+  name: string | null;
+  confirmed: boolean;
+  onConfirm: () => void;
+}) {
+  return (
+    <div className="flex items-center justify-between bg-zinc-50 dark:bg-zinc-900 rounded-xl px-4 py-3">
+      <span className="text-sm font-medium">{name ?? "—"}</span>
+      {confirmed ? (
+        <span className="text-green-600 text-sm font-medium flex items-center gap-1">
+          <div className="w-4 h-4 rounded bg-blue-600 flex items-center justify-center">
+            <span className="text-white font-bold text-[8px]">B</span>
+          </div>
+          Bekräftad
+        </span>
+      ) : (
+        <button
+          onClick={onConfirm}
+          className="bg-success text-white text-sm font-medium px-4 py-1.5 rounded-lg hover:opacity-90 transition-opacity flex items-center gap-1.5"
+        >
+          <div className="w-4 h-4 rounded bg-white/20 flex items-center justify-center">
+            <span className="text-white font-bold text-[8px]">B</span>
+          </div>
+          Bekräfta
+        </button>
       )}
     </div>
   );

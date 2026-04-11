@@ -4,7 +4,7 @@ import "./globals.css";
 export const metadata: Metadata = {
   title: "Concent - Dokumenterat samtycke",
   description:
-    "Concent hjälper dig att dokumentera ömsesidigt samtycke på ett tryggt och respektfullt sätt.",
+    "Concent dokumenterar ömsesidigt samtycke med BankID-signering — före och efter. Skydda dig. Skydda varandra.",
 };
 
 export default function RootLayout({
@@ -30,27 +30,38 @@ export default function RootLayout({
                 Concent
               </span>
             </a>
-            <a
-              href="/historik"
-              className="text-sm text-purple-600 dark:text-purple-400 hover:underline"
-            >
-              Historik
-            </a>
+            <nav className="flex items-center gap-4">
+              <a
+                href="/ny"
+                className="text-sm font-medium text-primary hover:underline"
+              >
+                Nytt
+              </a>
+              <a
+                href="/historik"
+                className="text-sm text-zinc-500 dark:text-zinc-400 hover:text-primary transition-colors"
+              >
+                Historik
+              </a>
+            </nav>
           </div>
         </header>
         <main className="flex-1 max-w-lg mx-auto w-full px-4 py-6">
           {children}
         </main>
-        <footer className="border-t border-purple-100 dark:border-purple-900/30 py-4 text-center text-xs text-zinc-400">
-          <div className="flex items-center justify-center gap-2">
-            <span>Concent &mdash; Trygghet genom transparens</span>
-            <span>&middot;</span>
-            <span className="flex items-center gap-1">
+        <footer className="border-t border-purple-100 dark:border-purple-900/30 py-6 text-center text-xs text-zinc-400">
+          <div className="max-w-lg mx-auto px-4 flex flex-col gap-2">
+            <div className="flex items-center justify-center gap-2">
+              <span>Concent</span>
+              <span>&middot;</span>
+              <span>Skydda dig. Skydda varandra.</span>
+            </div>
+            <div className="flex items-center justify-center gap-1.5 text-zinc-300 dark:text-zinc-600">
               <span className="inline-block w-4 h-4 rounded bg-blue-600 text-white font-bold text-[8px] leading-4 text-center">
                 B
               </span>
-              Secured by BankID
-            </span>
+              <span>Verifierat med BankID</span>
+            </div>
           </div>
         </footer>
       </body>

@@ -92,7 +92,10 @@ export default function JoinPage() {
   if (phase === "error") {
     return (
       <div className="flex flex-col items-center justify-center py-20 gap-4">
-        <p className="text-red-500">{error}</p>
+        <div className="w-12 h-12 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center">
+          <span className="text-red-500 text-xl">!</span>
+        </div>
+        <p className="text-zinc-500 text-center">{error}</p>
         <button
           onClick={() => router.push("/")}
           className="text-primary hover:underline text-sm"
@@ -107,6 +110,15 @@ export default function JoinPage() {
     return (
       <div className="flex flex-col gap-6">
         <div>
+          <button
+            onClick={() => {
+              setPhase("preview");
+              setBankIdOrder(null);
+            }}
+            className="text-sm text-primary hover:underline mb-2 inline-block"
+          >
+            &larr; Tillbaka
+          </button>
           <h1 className="text-2xl font-bold tracking-tight">
             Signera ditt samtycke
           </h1>
@@ -145,21 +157,22 @@ export default function JoinPage() {
   if (phase === "preview" && invite) {
     return (
       <div className="flex flex-col gap-6">
-        <div>
+        <div className="text-center pt-4">
+          <div className="w-14 h-14 mx-auto mb-4 rounded-full bg-gradient-to-br from-primary to-primary-light flex items-center justify-center">
+            <span className="text-white font-bold text-xl">C</span>
+          </div>
           <h1 className="text-2xl font-bold tracking-tight">
             Samtyckesförfrågan
           </h1>
-          <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-1">
-            {invite.initiatorName} vill dokumentera ömsesidigt samtycke med dig.
+          <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-2">
+            <strong>{invite.initiatorName}</strong> vill dokumentera ömsesidigt
+            samtycke med dig.
           </p>
         </div>
 
         {/* Agreements */}
         <div className="bg-white dark:bg-[#1a1025] rounded-2xl p-5 border border-purple-50 dark:border-purple-900/30 flex flex-col gap-3">
-          <h2 className="font-semibold">Överenskommelser</h2>
-          <p className="text-xs text-zinc-400">
-            Genom att signera godkänner du dessa punkter:
-          </p>
+          <h2 className="font-semibold">Ni samtycker till att:</h2>
           <div className="flex flex-col gap-2">
             {invite.agreements.map((a, i) => (
               <div
@@ -179,6 +192,15 @@ export default function JoinPage() {
               <p className="text-sm">{invite.beforeNotes}</p>
             </div>
           )}
+        </div>
+
+        {/* Info */}
+        <div className="bg-purple-50 dark:bg-purple-900/20 rounded-xl p-4 text-sm text-zinc-600 dark:text-zinc-400">
+          <p>
+            Genom att signera godkänner du överenskommelserna ovan. Efter 3 dagar
+            ombeds du bekräfta att allt gick bra. Du kan när som helst återkalla
+            ditt samtycke.
+          </p>
         </div>
 
         <div className="text-xs text-zinc-400 text-center">
