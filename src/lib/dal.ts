@@ -1,8 +1,9 @@
 /**
- * Data Access Layer - routes to mock (in-memory) or Supabase implementation.
+ * Data Access Layer — picks the right storage backend:
  *
- * Set SUPABASE_MOCK=true in .env.local to use in-memory storage
- * (useful when Supabase is unreachable, e.g. in sandboxed environments).
+ *   DATABASE=sqlite  → SQLite (local persistent, default)
+ *   DATABASE=supabase → Supabase (PostgreSQL, production)
+ *   SUPABASE_MOCK=true → In-memory (ephemeral, legacy fallback)
  */
 
 import type {
@@ -15,12 +16,16 @@ import type {
   AuditLogRow,
 } from "./supabase/types";
 
-const useMock = process.env.SUPABASE_MOCK === "true";
+function pickImpl() {
+  const db = process.env.DATABASE ?? "sqlite";
+  if (db === "supabase") return require("./dal-supabase");
+  if (db === "sqlite") return require("./dal-sqlite");
+  // Legacy fallback
+  if (process.env.SUPABASE_MOCK === "true") return require("./dal-mock");
+  return require("./dal-sqlite");
+}
 
-// Dynamic re-export based on environment
-const impl = useMock
-  ? require("./dal-mock")
-  : require("./dal-supabase");
+const impl = pickImpl();
 
 export const createSession: (params: {
   agreements: string[];

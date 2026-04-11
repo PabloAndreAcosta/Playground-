@@ -1,14 +1,18 @@
 /**
- * Audit log - routes to mock (in-memory) or Supabase implementation.
+ * Audit log — picks the same storage backend as the DAL.
  */
 
 import type { AuditEventType } from "./supabase/types";
 
-const useMock = process.env.SUPABASE_MOCK === "true";
+function pickImpl() {
+  const db = process.env.DATABASE ?? "sqlite";
+  if (db === "supabase") return require("./audit-supabase");
+  if (db === "sqlite") return require("./dal-sqlite");
+  if (process.env.SUPABASE_MOCK === "true") return require("./dal-mock");
+  return require("./dal-sqlite");
+}
 
-const impl = useMock
-  ? require("./dal-mock")
-  : require("./audit-supabase");
+const impl = pickImpl();
 
 export const logAuditEvent: (params: {
   sessionId: string;
