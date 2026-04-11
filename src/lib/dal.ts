@@ -1,4 +1,10 @@
-import { supabase } from "./supabase/client";
+/**
+ * Data Access Layer - routes to mock (in-memory) or Supabase implementation.
+ *
+ * Set SUPABASE_MOCK=true in .env.local to use in-memory storage
+ * (useful when Supabase is unreachable, e.g. in sandboxed environments).
+ */
+
 import type {
   SessionStatus,
   SignerRole,
@@ -9,63 +15,30 @@ import type {
   AuditLogRow,
 } from "./supabase/types";
 
-// --- Sessions ---
+const useMock = process.env.SUPABASE_MOCK === "true";
 
-export async function createSession(params: {
+// Dynamic re-export based on environment
+const impl = useMock
+  ? require("./dal-mock")
+  : require("./dal-supabase");
+
+export const createSession: (params: {
   agreements: string[];
   beforeNotes?: string;
   shareToken: string;
-}): Promise<ConsentSessionRow> {
-  const { data, error } = await supabase()
-    .from("consent_sessions")
-    .insert({
-      agreements: params.agreements,
-      before_notes: params.beforeNotes ?? null,
-      share_token: params.shareToken,
-      status: "pending_initiator",
-    })
-    .select()
-    .single();
+}) => Promise<ConsentSessionRow> = impl.createSession;
 
-  if (error) throw error;
-  return data as ConsentSessionRow;
-}
+export const getSession: (id: string) => Promise<ConsentSessionRow> =
+  impl.getSession;
 
-export async function getSession(id: string): Promise<ConsentSessionRow> {
-  const { data, error } = await supabase()
-    .from("consent_sessions")
-    .select("*")
-    .eq("id", id)
-    .single();
-
-  if (error) throw error;
-  return data as ConsentSessionRow;
-}
-
-export async function getSessionByShareToken(
+export const getSessionByShareToken: (
   token: string
-): Promise<ConsentSessionRow> {
-  const { data, error } = await supabase()
-    .from("consent_sessions")
-    .select("*")
-    .eq("share_token", token)
-    .single();
+) => Promise<ConsentSessionRow> = impl.getSessionByShareToken;
 
-  if (error) throw error;
-  return data as ConsentSessionRow;
-}
+export const listSessions: () => Promise<ConsentSessionRow[]> =
+  impl.listSessions;
 
-export async function listSessions(): Promise<ConsentSessionRow[]> {
-  const { data, error } = await supabase()
-    .from("consent_sessions")
-    .select("*")
-    .order("created_at", { ascending: false });
-
-  if (error) throw error;
-  return (data ?? []) as ConsentSessionRow[];
-}
-
-export async function updateSession(
+export const updateSession: (
   id: string,
   updates: Partial<{
     status: SessionStatus;
@@ -83,30 +56,12 @@ export async function updateSession(
     withdrawn_at: string;
     after_notes: string;
   }>
-): Promise<ConsentSessionRow> {
-  const { data, error } = await supabase()
-    .from("consent_sessions")
-    .update(updates)
-    .eq("id", id)
-    .select()
-    .single();
+) => Promise<ConsentSessionRow> = impl.updateSession;
 
-  if (error) throw error;
-  return data as ConsentSessionRow;
-}
+export const deleteSession: (id: string) => Promise<void> =
+  impl.deleteSession;
 
-export async function deleteSession(id: string): Promise<void> {
-  const { error } = await supabase()
-    .from("consent_sessions")
-    .delete()
-    .eq("id", id);
-
-  if (error) throw error;
-}
-
-// --- BankID Signatures ---
-
-export async function storeSignature(params: {
+export const storeSignature: (params: {
   sessionId: string;
   signerRole: SignerRole;
   action: SignAction;
@@ -118,45 +73,13 @@ export async function storeSignature(params: {
   signerPnrEncrypted: string;
   signerPnrIv: string;
   ipAddress?: string;
-}): Promise<BankIdSignatureRow> {
-  const { data, error } = await supabase()
-    .from("bankid_signatures")
-    .insert({
-      session_id: params.sessionId,
-      signer_role: params.signerRole,
-      action: params.action,
-      bankid_order_ref: params.bankidOrderRef,
-      signature: params.signature,
-      ocsp_response: params.ocspResponse,
-      signed_text: params.signedText,
-      signer_name: params.signerName,
-      signer_pnr_encrypted: params.signerPnrEncrypted,
-      signer_pnr_iv: params.signerPnrIv,
-      ip_address: params.ipAddress ?? null,
-    })
-    .select()
-    .single();
+}) => Promise<BankIdSignatureRow> = impl.storeSignature;
 
-  if (error) throw error;
-  return data as BankIdSignatureRow;
-}
-
-export async function getSignaturesForSession(
+export const getSignaturesForSession: (
   sessionId: string
-): Promise<BankIdSignatureRow[]> {
-  const { data, error } = await supabase()
-    .from("bankid_signatures")
-    .select("*")
-    .eq("session_id", sessionId)
-    .order("completed_at", { ascending: true });
+) => Promise<BankIdSignatureRow[]> = impl.getSignaturesForSession;
 
-  if (error) throw error;
-  return (data ?? []) as BankIdSignatureRow[];
-}
-
-// --- Pending BankID Orders ---
-
-export async function createPendingOrder(params: {
+export const createPendingOrder: (params: {
   orderRef: string;
   sessionId: string;
   signerRole: SignerRole;
@@ -164,59 +87,17 @@ export async function createPendingOrder(params: {
   autoStartToken: string;
   qrStartToken: string;
   qrStartSecret: string;
-}): Promise<void> {
-  const { error } = await supabase()
-    .from("pending_bankid_orders")
-    .insert({
-      order_ref: params.orderRef,
-      session_id: params.sessionId,
-      signer_role: params.signerRole,
-      action: params.action,
-      auto_start_token: params.autoStartToken,
-      qr_start_token: params.qrStartToken,
-      qr_start_secret: params.qrStartSecret,
-      status: "pending",
-    });
+}) => Promise<void> = impl.createPendingOrder;
 
-  if (error) throw error;
-}
-
-export async function getPendingOrder(
+export const getPendingOrder: (
   orderRef: string
-): Promise<PendingOrderRow> {
-  const { data, error } = await supabase()
-    .from("pending_bankid_orders")
-    .select("*")
-    .eq("order_ref", orderRef)
-    .single();
+) => Promise<PendingOrderRow> = impl.getPendingOrder;
 
-  if (error) throw error;
-  return data as PendingOrderRow;
-}
-
-export async function updatePendingOrderStatus(
+export const updatePendingOrderStatus: (
   orderRef: string,
   status: "complete" | "failed"
-): Promise<void> {
-  const { error } = await supabase()
-    .from("pending_bankid_orders")
-    .update({ status })
-    .eq("order_ref", orderRef);
+) => Promise<void> = impl.updatePendingOrderStatus;
 
-  if (error) throw error;
-}
-
-// --- Audit Log ---
-
-export async function getAuditLog(
+export const getAuditLog: (
   sessionId: string
-): Promise<AuditLogRow[]> {
-  const { data, error } = await supabase()
-    .from("audit_log")
-    .select("*")
-    .eq("session_id", sessionId)
-    .order("created_at", { ascending: true });
-
-  if (error) throw error;
-  return (data ?? []) as AuditLogRow[];
-}
+) => Promise<AuditLogRow[]> = impl.getAuditLog;

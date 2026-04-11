@@ -6,6 +6,7 @@ import {
   deleteSession,
 } from "@/lib/dal";
 import { logAuditEvent } from "@/lib/audit";
+import type { BankIdSignatureRow } from "@/lib/supabase/types";
 
 export async function GET(
   _request: NextRequest,
@@ -26,7 +27,7 @@ export async function GET(
     const auditLog = await getAuditLog(id);
 
     // Strip encrypted PNR data from response — never send to client
-    const safeSignatures = signatures.map((sig) => ({
+    const safeSignatures = signatures.map((sig: BankIdSignatureRow) => ({
       id: sig.id,
       signerRole: sig.signer_role,
       action: sig.action,
